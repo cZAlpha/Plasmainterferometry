@@ -8,7 +8,7 @@
 
 from PIL import Image
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 
 def num_of_fringes(image_path):
@@ -161,9 +161,40 @@ def find_delta(list1, list2):
     return delta_matrix
 
 
+
+def plot_delta_heatmap(delta_matrix):
+    """
+    ARGS:
+        delta_matrix: A 2D list (list of lists) containing the delta values
+                      which represent the differences between fringes.
+
+    RETURNS:
+        None. This function displays a heatmap plot of the delta values.
+    """
+    # Convert the delta matrix to a numpy array
+    data_np = np.array(delta_matrix)
+
+    # Create a figure and axis
+    fig, ax = plt.subplots()
+
+    # Plot the data as a heatmap
+    cax = ax.imshow(data_np, cmap='viridis', aspect='auto')
+
+    # Add colorbar to the plot
+    cbar = fig.colorbar(cax)
+
+    # Set the labels and title
+    ax.set_xlabel('Index')
+    ax.set_ylabel('Sample')
+    ax.set_title('Delta Values Heatmap')
+
+    # Display the plot
+    plt.show()
+
+
 # Example dictionaries
-background_fringes = find_transitions('assets/gas_example_background_image.bmp', 10)
-actual_fringes = find_transitions('assets/gas_example_image.bmp', 10)
+background_fringes = find_transitions('assets/gas_example_background_image.bmp', num_of_fringes('assets/gas_example_background_image.bmp'))
+actual_fringes = find_transitions('assets/gas_example_image.bmp', num_of_fringes('assets/gas_example_image.bmp'))
 
 
 for i in background_fringes:
@@ -174,7 +205,12 @@ print("")
 for i in actual_fringes:
     print(i)
 
+print("")
 
 # Using the find_delta function
-# delta = find_delta(background_fringes, actual_fringes)
-# print(delta)
+delta = find_delta(background_fringes, actual_fringes)
+
+for i in delta:
+    print(i)
+
+plot_delta_heatmap(delta)
