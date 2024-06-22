@@ -51,10 +51,14 @@ def find_transitions(image_path):
 
     return transitions
 
-# After running it, the code works, so I will move onto the last goal:
-# finding the delta_x of each fringe and outputting it within a list
+
 
 def find_delta(dict1, dict2):
+    # ARGS: dict1, dict2; two dictionaries who contain the starting and ending
+    # point of each fringe within the given image
+    # RETURNS: A 2D matrix (list) which contains the integer difference between
+    # each fringe in the background and actual image (gas or plasma)
+
     # Extract the transitions lists from both dictionaries
     transitions1 = dict1['transitions']
     transitions2 = dict2['transitions']
