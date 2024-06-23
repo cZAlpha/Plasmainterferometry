@@ -330,7 +330,73 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
-# Examples
+def calculate_electron_density(delta_x_matrix, lambda_laser, L, coeff):
+    """
+    Calculate the electron density from a matrix of fringe displacements.
+
+    :param delta_x_matrix: 2D matrix of fringe displacements in pixels.
+    :param lambda_laser: Wavelength of the laser used in the interferometer (in meters).
+    :param L: Length of the path through the plasma (in meters).
+    :param coeff: Conversion factor from pixels to meters.
+    :return: 2D matrix of electron densities (n_e) in m^-3.
+    """
+
+    # Convert delta_x_matrix to a numpy array
+    delta_x_matrix = np.array(delta_x_matrix)
+
+    # Constants
+    e = 1.60217662e-19  # Elementary charge (Coulombs)
+    epsilon_0 = 8.854187817e-12  # Permittivity of free space (F/m)
+    m_e = 9.10938356e-31  # Electron mass (kg)
+    c = 3.0e8  # Speed of light (m/s)
+
+    # Convert fringe displacement to phase shift
+    delta_phi_matrix = 2 * np.pi * delta_x_matrix * coeff / lambda_laser
+
+    # Calculate electron density
+    n_e_matrix = (delta_phi_matrix * epsilon_0 * m_e * c ** 2) / (2 * np.pi * e ** 2 * L)
+
+    return n_e_matrix
+
+
+
+def plot_electron_density_heatmap(electron_density_matrix, plot_title):
+    """
+    ARGS:
+        electron_density_matrix: A 2D numpy array containing the electron density values.
+        plot_title: a string which represents the title of the plot.
+
+    RETURNS:
+        None. This function displays a heatmap plot of the electron density values.
+    """
+    # Create a figure and axis
+    fig, ax = plt.subplots()
+
+    # Plot the data as a heatmap
+    cax = ax.imshow(electron_density_matrix, cmap='viridis', aspect='auto')
+
+    # Add colorbar to the plot
+    cbar = fig.colorbar(cax)
+
+    # Set label for the colorbar
+    cbar.set_label('Electron Density (m^-3)', rotation=90, labelpad=15)
+
+    # Set the labels and title
+    ax.set_xlabel('Fringe #')
+    ax.set_ylabel('Sample #')
+    ax.set_title(plot_title)
+
+    # Set the window title (backend-specific method)
+    fig.canvas.manager.set_window_title('Electron Density Heatmap')
+
+    # Display the plot
+    plt.show()
+
+
+
+# START - Examples
+#
+# PLASMA DATA
 background_fringes = find_transitions('assets/plasma_example_background_image.bmp', 320)
 actual_fringes = find_transitions('assets/plasma_example_image.bmp', 320)
 delta = find_delta(background_fringes, actual_fringes)
@@ -338,12 +404,13 @@ delta = find_delta(background_fringes, actual_fringes)
 
 plot_delta_heatmap(delta, "Plasma Fringe Δx")
 
-background_fringes = find_transitions('assets/gas_example_background_image.bmp', 320)
-actual_fringes = find_transitions('assets/gas_example_image.bmp', 320)
-delta = find_delta(background_fringes, actual_fringes)
-# delta = expand_data(delta, 1000)
-
-plot_delta_heatmap(delta, "Gas Fringe Δx")
+# GAS DATA
+# background_fringes = find_transitions('assets/gas_example_background_image.bmp', 320)
+# actual_fringes = find_transitions('assets/gas_example_image.bmp', 320)
+# delta = find_delta(background_fringes, actual_fringes)
+# # delta = expand_data(delta, 1000)
+#
+# plot_delta_heatmap(delta, "Gas Fringe Δx")
 
 # Testing code
 # for i in background_fringes:
@@ -359,3 +426,18 @@ plot_delta_heatmap(delta, "Gas Fringe Δx")
 # for i in delta:
 #     print(i)
 
+# Getting electron density data:
+
+
+# Example usage
+
+lambda_laser = 532e-9  # Wavelength of laser in meters (example value for green laser)
+L = 0.01  # Path length through plasma in meters (example value)
+coeff = 1e-6  # Conversion factor from pixels to meters (example value)
+
+electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
+
+plot_title = 'Electron Density Heatmap'
+plot_electron_density_heatmap(electron_density_matrix, plot_title)
+
+# STOP - Examples
