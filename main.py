@@ -291,11 +291,12 @@ def expand_data(matrix, x):
 
 
 
-def plot_delta_heatmap(delta_matrix):
+def plot_delta_heatmap(delta_matrix, plot_title):
     """
     ARGS:
         delta_matrix: A 2D list (list of lists) containing the delta values
                       which represent the differences between fringes.
+        plot_title: a string which represents the title of the plot.
 
     RETURNS:
         None. This function displays a heatmap plot of the delta values.
@@ -318,7 +319,7 @@ def plot_delta_heatmap(delta_matrix):
     # Set the labels and title
     ax.set_xlabel('Fringe #')
     ax.set_ylabel('Sample #')
-    ax.set_title('Fringe Δx')
+    ax.set_title(plot_title)
 
     # Set the window title (backend-specific method)
     fig.canvas.manager.set_window_title('Delta Heatmap')
@@ -335,14 +336,14 @@ actual_fringes = find_transitions('assets/plasma_example_image.bmp', 320)
 delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
 
-plot_delta_heatmap(delta)
+plot_delta_heatmap(delta, "Plasma Fringe Δx")
 
 background_fringes = find_transitions('assets/gas_example_background_image.bmp', 320)
 actual_fringes = find_transitions('assets/gas_example_image.bmp', 320)
 delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
 
-plot_delta_heatmap(delta)
+plot_delta_heatmap(delta, "Gas Fringe Δx")
 
 # Testing code
 # for i in background_fringes:
