@@ -210,6 +210,7 @@ def find_transitions(image_path, x = 1):
     return fringe_starts
 
 
+
 def find_delta(list1, list2):
     """
     ARGS:
@@ -329,7 +330,6 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
-
 def calculate_electron_density(delta_x_matrix, lambda_laser, L, coeff):
     """
     Calculate the electron density from a matrix of fringe displacements.
@@ -412,32 +412,17 @@ delta = find_delta(background_fringes, actual_fringes)
 
 plot_delta_heatmap(delta, "Gas Fringe Δx")
 
-# Testing code
-# for i in background_fringes:
-#     print(i)
-#
-# print("")
-#
-# for i in actual_fringes:
-#     print(i)
-#
-# print("")
-#
-# for i in delta:
-#     print(i)
 
 # Getting electron density data:
-
-
 # Example usage
 
-lambda_laser = 532e-9  # Wavelength of laser in meters (example value for green laser)
-L = 0.01  # Path length through plasma in meters (example value)
-coeff = 1e-6  # Conversion factor from pixels to meters (example value)
-
-electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
-
-plot_title = 'Electron Density Heatmap'
-plot_electron_density_heatmap(electron_density_matrix, plot_title)
+# lambda_laser = 532e-9  # Wavelength of laser in meters (example value for green laser)
+# L = 0.01  # Path length through plasma in meters (example value)
+# coeff = 1e-6  # Conversion factor from pixels to meters (example value)
+#
+# electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
+#
+# plot_title = 'Electron Density Heatmap'
+# plot_electron_density_heatmap(electron_density_matrix, plot_title)
 
 # STOP - Examples
