@@ -397,20 +397,20 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
 # START - Examples
 #
 # PLASMA DATA
-background_fringes = find_transitions('assets/plasma_example_background_image.bmp', 320)
-actual_fringes = find_transitions('assets/plasma_example_image.bmp', 320)
+background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp', 320)
+actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp', 320)
 delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
 
 plot_delta_heatmap(delta, "Plasma Fringe Δx")
 
 # GAS DATA
-# background_fringes = find_transitions('assets/gas_example_background_image.bmp', 320)
-# actual_fringes = find_transitions('assets/gas_example_image.bmp', 320)
-# delta = find_delta(background_fringes, actual_fringes)
-# # delta = expand_data(delta, 1000)
-#
-# plot_delta_heatmap(delta, "Gas Fringe Δx")
+background_fringes = find_transitions('assets/ExampleImages/gas_example_background_image.bmp', 320)
+actual_fringes = find_transitions('assets/ExampleImages/gas_example_image.bmp', 320)
+delta = find_delta(background_fringes, actual_fringes)
+# delta = expand_data(delta, 1000)
+
+plot_delta_heatmap(delta, "Gas Fringe Δx")
 
 # Testing code
 # for i in background_fringes:
