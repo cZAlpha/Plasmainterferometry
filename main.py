@@ -437,24 +437,44 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
 # START - Examples
 #
 # PLASMA DATA
-background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp', 320)
-actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp', 320)
-delta = find_delta(background_fringes, actual_fringes)
+# background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp', 320)
+# actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp', 320)
+# delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
-
-plot_delta_heatmap(delta, "Plasma Fringe Δx")
+# plot_delta_heatmap(delta, "Plasma Fringe Δx")
 
 # GAS DATA
 # background_fringes = find_transitions('assets/ExampleImages/gas_example_background_image.bmp', 320)
 # actual_fringes = find_transitions('assets/ExampleImages/gas_example_image.bmp', 320)
 # delta = find_delta(background_fringes, actual_fringes)
-# # delta = expand_data(delta, 1000)
-#
+# delta = expand_data(delta, 1000)
 # plot_delta_heatmap(delta, "Gas Fringe Δx")
 
 
 # Getting electron density data:
 # Example usage
+
+# lambda_laser = 1023e-9  # Wavelength of laser in meters (example value for green laser)
+# L = 0.0018  # Path length through plasma in meters (example value)
+# coeff = 1e-6  # Conversion factor from pixels to meters (example value)
+#
+# electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
+#
+# plot_title = 'Electron Density Heatmap'
+# plot_electron_density_heatmap(electron_density_matrix, plot_title)
+
+# STOP - Examples
+
+
+
+# START - 6/21/24 Data
+
+# GAS DATA
+background_fringes = find_transitions('assets/6_21/700psiCFAirbkg.bmp', 180)
+actual_fringes = find_transitions('assets/6_21/700psiCFAir.bmp', 180)
+delta = find_delta(background_fringes, actual_fringes)
+# delta = expand_data(delta, 500)
+plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
 
 lambda_laser = 1023e-9  # Wavelength of laser in meters (example value for green laser)
 L = 0.0018  # Path length through plasma in meters (example value)
@@ -464,18 +484,5 @@ electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coe
 
 plot_title = 'Electron Density Heatmap'
 plot_electron_density_heatmap(electron_density_matrix, plot_title)
-
-# STOP - Examples
-
-
-
-# START - 6/21/24 Data
-
-# GAS DATA
-# background_fringes = find_transitions('assets/6_21/700psiCFAirbkg.bmp', 180)
-# actual_fringes = find_transitions('assets/6_21/700psiCFAir.bmp', 180)
-# delta = find_delta(background_fringes, actual_fringes)
-# delta = expand_data(delta, 500)
-# plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
 
 # STOP  - 6/21/24 Data
