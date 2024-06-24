@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 import math
 
 
@@ -308,14 +309,17 @@ def plot_delta_heatmap(delta_matrix, plot_title):
     # Create a figure and axis
     fig, ax = plt.subplots()
 
-    # Plot the data as a heatmap
-    cax = ax.imshow(data_np, cmap='viridis', aspect='auto')
+    # Plot the data as a heatmap with the 'plasma' colormap
+    cax = ax.imshow(data_np, cmap='plasma_r', aspect='auto')
 
     # Add colorbar to the plot
     cbar = fig.colorbar(cax)
 
     # Set label for the colorbar
     cbar.set_label('Delta Values', rotation=90, labelpad=15)
+
+    # Set ticks and labels for the colorbar
+    cbar.ax.invert_yaxis()  # Invert the colorbar so that 0 is at the bottom
 
     # Set the labels and title
     ax.set_xlabel('Fringe #')
@@ -330,6 +334,7 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
+
 def calculate_electron_density(delta_x_matrix, lambda_laser, L, coeff):
     """
     Calculate the electron density from a matrix of fringe displacements.
@@ -340,6 +345,8 @@ def calculate_electron_density(delta_x_matrix, lambda_laser, L, coeff):
     :param coeff: Conversion factor from pixels to meters.
     :return: 2D matrix of electron densities (n_e) in m^-3.
     """
+    # for i in delta_x_matrix:
+    #     print(i)
 
     # Convert delta_x_matrix to a numpy array
     delta_x_matrix = np.array(delta_x_matrix)
@@ -372,19 +379,47 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
     # Create a figure and axis
     fig, ax = plt.subplots()
 
-    # Plot the data as a heatmap
-    cax = ax.imshow(electron_density_matrix, cmap='viridis', aspect='auto')
+    # Plot the data as a heatmap with a specific colormap (reversed)
+    cmap = plt.get_cmap('plasma_r')  # Using 'plasma_r' for reversed plasma colormap
+    cax = ax.imshow(electron_density_matrix, cmap=cmap, aspect='auto')
 
-    # Add colorbar to the plot
-    cbar = fig.colorbar(cax)
+    # Add colorbar to the plot, adjusting orientation and position
+    cbar = fig.colorbar(cax, orientation='vertical', fraction=0.05, pad=0.04)
 
-    # Set label for the colorbar
-    cbar.set_label('Electron Density (m^-3)', rotation=90, labelpad=15)
+    # Set label for the colorbar with a custom formatter
+    cbar.set_label('Electron Density ($\\times 10^{18}$ m$^{-3}$)', rotation=90, labelpad=15)
+
+    # Use ScalarFormatter to format the colorbar labels
+    formatter = ScalarFormatter(useMathText=True)
+    formatter.set_powerlimits((0, 0))
+    cbar.ax.yaxis.set_major_formatter(formatter)
+
+    # Set ticks and labels for the colorbar
+    cbar.ax.invert_yaxis()  # Invert the colorbar so that 0 is at the bottom
 
     # Set the labels and title
-    ax.set_xlabel('Fringe #')
-    ax.set_ylabel('Sample #')
+    ax.set_xlabel('z (mm)')
+    ax.set_ylabel('r (μm)')
     ax.set_title(plot_title)
+
+    # Generate x-axis tick positions from 0 to 1.8 with increments of 0.2
+    x_ticks = np.arange(0, 2.0, 0.2)  # 2.0 ensures we include 1.8
+
+    # Generate y-axis tick positions from -500 to 500 with 0 in the center
+    y_ticks = np.arange(-500, 501, 100)
+    y_tick_labels = [int(y) for y in y_ticks]
+
+    # Ensure the x-tick labels are correctly scaled and rounded
+    x_tick_labels = [round(x, 1) for x in x_ticks]
+
+    # Set custom x ticks
+    ax.set_xticks(np.linspace(0, electron_density_matrix.shape[1] - 1, len(x_ticks)))
+    ax.set_xticklabels(x_tick_labels)
+    ax.set_yticks(np.linspace(0, electron_density_matrix.shape[0] - 1, len(y_ticks)))
+    ax.set_yticklabels(y_tick_labels)
+
+    # Ensure the x-axis starts at 0
+    ax.set_xlim(left=0)
 
     # Set the window title (backend-specific method)
     fig.canvas.manager.set_window_title('Electron Density Heatmap')
@@ -394,15 +429,20 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
 
 
 
+
+
+
+
+
 # START - Examples
 #
 # PLASMA DATA
-# background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp', 320)
-# actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp', 320)
-# delta = find_delta(background_fringes, actual_fringes)
-# # delta = expand_data(delta, 1000)
-#
-# plot_delta_heatmap(delta, "Plasma Fringe Δx")
+background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp', 320)
+actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp', 320)
+delta = find_delta(background_fringes, actual_fringes)
+# delta = expand_data(delta, 1000)
+
+plot_delta_heatmap(delta, "Plasma Fringe Δx")
 
 # GAS DATA
 # background_fringes = find_transitions('assets/ExampleImages/gas_example_background_image.bmp', 320)
@@ -416,14 +456,14 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
 # Getting electron density data:
 # Example usage
 
-# lambda_laser = 532e-9  # Wavelength of laser in meters (example value for green laser)
-# L = 0.01  # Path length through plasma in meters (example value)
-# coeff = 1e-6  # Conversion factor from pixels to meters (example value)
-#
-# electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
-#
-# plot_title = 'Electron Density Heatmap'
-# plot_electron_density_heatmap(electron_density_matrix, plot_title)
+lambda_laser = 1023e-9  # Wavelength of laser in meters (example value for green laser)
+L = 0.0018  # Path length through plasma in meters (example value)
+coeff = 1e-6  # Conversion factor from pixels to meters (example value)
+
+electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
+
+plot_title = 'Electron Density Heatmap'
+plot_electron_density_heatmap(electron_density_matrix, plot_title)
 
 # STOP - Examples
 
@@ -432,10 +472,10 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
 # START - 6/21/24 Data
 
 # GAS DATA
-background_fringes = find_transitions('assets/6_21/700psiCFAirbkg.bmp', 180)
-actual_fringes = find_transitions('assets/6_21/700psiCFAir.bmp', 180)
-delta = find_delta(background_fringes, actual_fringes)
-delta = expand_data(delta, 500)
-plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
+# background_fringes = find_transitions('assets/6_21/700psiCFAirbkg.bmp', 180)
+# actual_fringes = find_transitions('assets/6_21/700psiCFAir.bmp', 180)
+# delta = find_delta(background_fringes, actual_fringes)
+# delta = expand_data(delta, 500)
+# plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
 
 # STOP  - 6/21/24 Data
