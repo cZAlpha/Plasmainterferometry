@@ -133,7 +133,7 @@ def num_of_fringes(image_path):
 
 
 
-def find_fringes(image_path, slices = 1):
+def find_fringes(image_path, slices=1):
     """
         PURPOSE:
             The purpose of this function is to take the slightly altered given image and
@@ -163,10 +163,6 @@ def find_fringes(image_path, slices = 1):
             exists within your version of this project).
     """
 
-    # Processes the given image to ensure that there are no gray pixels (I'm too lazy to program threshold values and
-    # don't view it as particularly necessary for the way I am going about this)
-    convert_to_black_and_white(image_path)
-
     # Load the BMP image
     image = Image.open(image_path).convert('L')  # Convert to grayscale
 
@@ -176,22 +172,13 @@ def find_fringes(image_path, slices = 1):
     # Get the dimensions of the image
     height, width = image_np.shape
 
-    # x is an integer which represents the # of fringes within the image, this
-    # keeps the number of samples simple and makes the graph look more symmetrical
-    # if you'd like to take more samples, change this value!
-    # IMPORTANT: if you change x's value, you MUST ensure that the image is ONLY
-    # black and white with NO GREY PIXELS, otherwise the code will likely not work!
-    if slices <= 0: # lower bound case
-        raise ValueError("The number of samples (x) must be greater than 0.")
-
-    if slices >= 100: # upper bound case (after testing this is around where the algorithm shits itself)
-        raise ValueError("The number of samples (x) must be less than 100. Try to not input an argument for this value "
-                         "unless testing.")
-
-    if ( slices == 1): # this just covers the default case by ensuring it is the same as the # of fringes
-        x = height
-
-
+    # Validate slices parameter
+    if slices <= 0:
+        raise ValueError("The number of samples (slices) must be greater than 0.")
+    if slices >= 100:
+        raise ValueError("The number of samples (slices) must be less than 100. Try to not input an argument for this value unless testing.")
+    if slices == 1:
+        slices = height
 
     # Calculate the step size for sampling rows
     step = height // slices
@@ -224,12 +211,35 @@ def find_fringes(image_path, slices = 1):
         if in_black:
             fringe_starts[sample_num].append(start)
 
-    # TESTING ONLY
-    print(image_path)
-    for row in fringe_starts:
-        print(row)
+    # Modify the fringe_starts according to the new requirements
+    modified_fringe_starts = []
 
-    return fringe_starts
+    for row in fringe_starts:
+        if not row:
+            continue
+
+        modified_row = []
+
+        # Add zeros to the left of the first entry
+        modified_row.extend([0] * row[0])
+        modified_row.append(row[0])
+
+        # Add differences for subsequent entries
+        for i in range(1, len(row)):
+            difference = row[i] - row[i-1] - 1  # Subtract 1 to account for direct adjacency
+            modified_row.extend([0] * difference)
+            modified_row.append(row[i])
+
+        # Add zeros to the right of the last entry
+        modified_row.extend([0] * (width - row[-1] - 1))
+
+        modified_fringe_starts.append(modified_row)
+
+    # TESTING ONLY
+    for row in modified_fringe_starts:
+        print("Length:", len(row))
+
+    return modified_fringe_starts
 
 
 
@@ -268,6 +278,7 @@ def find_delta(list1, list2):
         # Convert the result back to a list and add to the delta matrix
         delta_matrix.append(delta_sample.tolist())
 
+    print("\n", "Delta")
     for i in delta_matrix:
         print(i)
 
@@ -387,10 +398,11 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 # START - 6/21/24 Data
 
 # GAS DATA
-background_fringes = find_fringes('assets/6_21/700psiCFAirbkg.bmp', 26) # REMOVE 26 AFTER TESTING
-actual_fringes = find_fringes('assets/6_21/700psiCFAir.bmp', 26) # REMOVE 26 AFTER TESTING
+background_fringes = find_fringes('assets/6_21/700psiCFAirbkg.bmp') # REMOVE 26 AFTER TESTING
+actual_fringes = find_fringes('assets/6_21/700psiCFAir.bmp') # REMOVE 26 AFTER TESTING
 delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
 plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
+plot_heatmap(delta, 787)
 
 # STOP  - 6/21/24 Data
