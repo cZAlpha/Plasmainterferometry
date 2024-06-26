@@ -1,7 +1,6 @@
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
 import math
 
 
@@ -134,14 +133,23 @@ def num_of_fringes(image_path):
 
 
 
-def find_transitions(image_path, x = 1):
+def find_fringes(image_path, slices = 1):
     """
+        PURPOSE:
+            The purpose of this function is to take the slightly altered given image and
+            find the location of the given fringes in the x axis of the image, and return
+            a matrix of values whose row # corresponds to the x row of the image and whose
+            values within the row represent the given x coordinate starting point of each
+            fringe within that given x row of the image. To be clear, you can change the
+            second parameter to take that # of vertical slices of the image if you would
+            like to conserve processing power for testing or otherwise, at the very severe
+            cost of accuracy/precision of your data.
         ARGS:
             image_path: a string which shows the RELATIVE path to the file
                         you want to reference. Do not use absolute paths,
                         as those are not compatible across systems and are
                         not good practice.
-            x: an integer which represents the number of samples the algorithm
+            slices: an integer which represents the number of samples the algorithm
                 will take.
         RETURNS:
             A 2D matrix (list of lists) which contains the integer starting
@@ -154,19 +162,10 @@ def find_transitions(image_path, x = 1):
             would suggest using the "num_of_fringes()" function (if it
             exists within your version of this project).
     """
-    # x is an integer which represents the # of fringes within the image, this
-    # keeps the number of samples simple and makes the graph look more symmetrical
-    # if you'd like to take more samples, change this value!
-    # IMPORTANT: if you change x's value, you MUST ensure that the image is ONLY
-    # black and white with NO GREY PIXELS, otherwise the code will likely not work!
-    if ( x == 1): # this just covers the default case by ensuring it is the same as the # of fringes
-        x = num_of_fringes(image_path)
 
-    if x <= 0: # lower bound case
-        raise ValueError("The number of samples (x) must be greater than 0.")
-
-    if x >= 321: # upper bound case (after testing this is around where the algorithm shits itself)
-        raise ValueError("The number of samples (x) must be less than 320.")
+    # Processes the given image to ensure that there are no gray pixels (I'm too lazy to program threshold values and
+    # don't view it as particularly necessary for the way I am going about this)
+    convert_to_black_and_white(image_path)
 
     # Load the BMP image
     image = Image.open(image_path).convert('L')  # Convert to grayscale
@@ -177,13 +176,30 @@ def find_transitions(image_path, x = 1):
     # Get the dimensions of the image
     height, width = image_np.shape
 
+    # x is an integer which represents the # of fringes within the image, this
+    # keeps the number of samples simple and makes the graph look more symmetrical
+    # if you'd like to take more samples, change this value!
+    # IMPORTANT: if you change x's value, you MUST ensure that the image is ONLY
+    # black and white with NO GREY PIXELS, otherwise the code will likely not work!
+    if slices <= 0: # lower bound case
+        raise ValueError("The number of samples (x) must be greater than 0.")
+
+    if slices >= 100: # upper bound case (after testing this is around where the algorithm shits itself)
+        raise ValueError("The number of samples (x) must be less than 100. Try to not input an argument for this value "
+                         "unless testing.")
+
+    if ( slices == 1): # this just covers the default case by ensuring it is the same as the # of fringes
+        x = height
+
+
+
     # Calculate the step size for sampling rows
-    step = height // x
+    step = height // slices
 
     # Initialize the list to store the starting points of fringes
-    fringe_starts = [[] for _ in range(x)]
+    fringe_starts = [[] for _ in range(slices)]
 
-    for sample_num in range(x):
+    for sample_num in range(slices):
         # Determine the row index to sample
         row_index = sample_num * step
         row = image_np[row_index, :]
@@ -207,6 +223,11 @@ def find_transitions(image_path, x = 1):
         # Handle case where the fringe goes till the end of the row
         if in_black:
             fringe_starts[sample_num].append(start)
+
+    # TESTING ONLY
+    print(image_path)
+    for row in fringe_starts:
+        print(row)
 
     return fringe_starts
 
@@ -241,14 +262,20 @@ def find_delta(list1, list2):
         # Calculate the differences between corresponding fringes
         delta_sample = [sample1[j] - sample2[j] for j in range(len(sample1))]
 
-        # Add the calculated differences to the delta matrix
-        delta_matrix.append(delta_sample)
+        # Convert delta_sample to a NumPy array and multiply by 2 * pi
+        delta_sample = np.array(delta_sample) * (2 * np.pi)
+
+        # Convert the result back to a list and add to the delta matrix
+        delta_matrix.append(delta_sample.tolist())
+
+    for i in delta_matrix:
+        print(i)
 
     return delta_matrix
 
 
 
-def expand_data(matrix, x):
+def expand_data(matrix, x): # DO NOT USE, DEPRICATED
     """
     Expands the amount of data within a given list of lists (matrix) by adding new entries
     at the midpoint between each pair of existing entries in each row, targeting 'x' entries per row.
@@ -310,13 +337,13 @@ def plot_delta_heatmap(delta_matrix, plot_title):
     fig, ax = plt.subplots()
 
     # Plot the data as a heatmap with the 'plasma' colormap
-    cax = ax.imshow(data_np, cmap='plasma_r', aspect='auto')
+    cax = ax.imshow(data_np, cmap='jet_r', aspect='auto')
 
     # Add colorbar to the plot
     cbar = fig.colorbar(cax)
 
     # Set label for the colorbar
-    cbar.set_label('Delta Values', rotation=90, labelpad=15)
+    cbar.set_label('Delta Values (px)', rotation=90, labelpad=15)
 
     # Set ticks and labels for the colorbar
     cbar.ax.invert_yaxis()  # Invert the colorbar so that 0 is at the bottom
@@ -335,133 +362,23 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
-def calculate_electron_density(delta_x_matrix, lambda_laser, L, coeff):
-    """
-    Calculate the electron density from a matrix of fringe displacements.
-
-    :param delta_x_matrix: 2D matrix of fringe displacements in pixels.
-    :param lambda_laser: Wavelength of the laser used in the interferometer (in meters).
-    :param L: Length of the path through the plasma (in meters).
-    :param coeff: Conversion factor from pixels to meters.
-    :return: 2D matrix of electron densities (n_e) in m^-3.
-    """
-    # for i in delta_x_matrix:
-    #     print(i)
-
-    # Convert delta_x_matrix to a numpy array
-    delta_x_matrix = np.array(delta_x_matrix)
-
-    # Constants
-    e = 1.60217662e-19  # Elementary charge (Coulombs)
-    epsilon_0 = 8.854187817e-12  # Permittivity of free space (F/m)
-    m_e = 9.10938356e-31  # Electron mass (kg)
-    c = 3.0e8  # Speed of light (m/s)
-
-    # Convert fringe displacement to phase shift
-    delta_phi_matrix = 2 * np.pi * delta_x_matrix * coeff / lambda_laser
-
-    # Calculate electron density
-    n_e_matrix = (delta_phi_matrix * epsilon_0 * m_e * c ** 2) / (2 * np.pi * e ** 2 * L)
-
-    return n_e_matrix
-
-
-
-def plot_electron_density_heatmap(electron_density_matrix, plot_title):
-    """
-    ARGS:
-        electron_density_matrix: A 2D numpy array containing the electron density values.
-        plot_title: a string which represents the title of the plot.
-
-    RETURNS:
-        None. This function displays a heatmap plot of the electron density values.
-    """
-    # Create a figure and axis
-    fig, ax = plt.subplots()
-
-    # Plot the data as a heatmap with a specific colormap (reversed)
-    cmap = plt.get_cmap('plasma_r')  # Using 'plasma_r' for reversed plasma colormap
-    cax = ax.imshow(electron_density_matrix, cmap=cmap, aspect='auto')
-
-    # Add colorbar to the plot, adjusting orientation and position
-    cbar = fig.colorbar(cax, orientation='vertical', fraction=0.05, pad=0.04)
-
-    # Set label for the colorbar with a custom formatter
-    cbar.set_label('Electron Density ($\\times 10^{18}$ m$^{-3}$)', rotation=90, labelpad=15)
-
-    # Use ScalarFormatter to format the colorbar labels
-    formatter = ScalarFormatter(useMathText=True)
-    formatter.set_powerlimits((0, 0))
-    cbar.ax.yaxis.set_major_formatter(formatter)
-
-    # Set ticks and labels for the colorbar
-    cbar.ax.invert_yaxis()  # Invert the colorbar so that 0 is at the bottom
-
-    # Set the labels and title
-    ax.set_xlabel('z (mm)')
-    ax.set_ylabel('r (μm)')
-    ax.set_title(plot_title)
-
-    # Generate x-axis tick positions from 0 to 1.8 with increments of 0.2
-    x_ticks = np.arange(0, 2.0, 0.2)  # 2.0 ensures we include 1.8
-
-    # Generate y-axis tick positions from -500 to 500 with 0 in the center
-    y_ticks = np.arange(-500, 501, 100)
-    y_tick_labels = [int(y) for y in y_ticks]
-
-    # Ensure the x-tick labels are correctly scaled and rounded
-    x_tick_labels = [round(x, 1) for x in x_ticks]
-
-    # Set custom x ticks
-    ax.set_xticks(np.linspace(0, electron_density_matrix.shape[1] - 1, len(x_ticks)))
-    ax.set_xticklabels(x_tick_labels)
-    ax.set_yticks(np.linspace(0, electron_density_matrix.shape[0] - 1, len(y_ticks)))
-    ax.set_yticklabels(y_tick_labels)
-
-    # Ensure the x-axis starts at 0
-    ax.set_xlim(left=0)
-
-    # Set the window title (backend-specific method)
-    fig.canvas.manager.set_window_title('Electron Density Heatmap')
-
-    # Display the plot
-    plt.show()
-
-
-
-
-
-
 
 
 # START - Examples
 #
 # PLASMA DATA
-# background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp', 320)
-# actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp', 320)
+# background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp')
+# actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp')
 # delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
 # plot_delta_heatmap(delta, "Plasma Fringe Δx")
 
 # GAS DATA
-# background_fringes = find_transitions('assets/ExampleImages/gas_example_background_image.bmp', 320)
-# actual_fringes = find_transitions('assets/ExampleImages/gas_example_image.bmp', 320)
+# background_fringes = find_transitions('assets/ExampleImages/gas_example_background_image.bmp')
+# actual_fringes = find_transitions('assets/ExampleImages/gas_example_image.bmp')
 # delta = find_delta(background_fringes, actual_fringes)
 # delta = expand_data(delta, 1000)
 # plot_delta_heatmap(delta, "Gas Fringe Δx")
-
-
-# Getting electron density data:
-# Example usage
-
-# lambda_laser = 1023e-9  # Wavelength of laser in meters (example value for green laser)
-# L = 0.0018  # Path length through plasma in meters (example value)
-# coeff = 1e-6  # Conversion factor from pixels to meters (example value)
-#
-# electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
-#
-# plot_title = 'Electron Density Heatmap'
-# plot_electron_density_heatmap(electron_density_matrix, plot_title)
 
 # STOP - Examples
 
@@ -470,19 +387,10 @@ def plot_electron_density_heatmap(electron_density_matrix, plot_title):
 # START - 6/21/24 Data
 
 # GAS DATA
-background_fringes = find_transitions('assets/6_21/700psiCFAirbkg.bmp', 180)
-actual_fringes = find_transitions('assets/6_21/700psiCFAir.bmp', 180)
+background_fringes = find_fringes('assets/6_21/700psiCFAirbkg.bmp', 26) # REMOVE 26 AFTER TESTING
+actual_fringes = find_fringes('assets/6_21/700psiCFAir.bmp', 26) # REMOVE 26 AFTER TESTING
 delta = find_delta(background_fringes, actual_fringes)
-# delta = expand_data(delta, 500)
+# delta = expand_data(delta, 1000)
 plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
-
-lambda_laser = 1023e-9  # Wavelength of laser in meters (example value for green laser)
-L = 0.0018  # Path length through plasma in meters (example value)
-coeff = 1e-6  # Conversion factor from pixels to meters (example value)
-
-electron_density_matrix = calculate_electron_density(delta, lambda_laser, L, coeff)
-
-plot_title = 'Electron Density Heatmap'
-plot_electron_density_heatmap(electron_density_matrix, plot_title)
 
 # STOP  - 6/21/24 Data
