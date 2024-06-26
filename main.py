@@ -2,20 +2,21 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import os
 
 
 
 def convert_to_black_and_white(image_path):
     """
-    Convert the input BMP image to black and white by setting all gray pixels
-    to white (255, 255, 255), while leaving black (0, 0, 0) and white (255, 255, 255)
-    pixels unchanged.
+        Purpose:
+            Convert the input BMP image to black and white by setting all gray pixels
+            to white (255, 255, 255), while leaving black (0, 0, 0) and white (255, 255, 255)
+            pixels unchanged.
+        Args:
+        - image_path (str): Path to the BMP image file.
 
-    Args:
-    - image_path (str): Path to the BMP image file.
-
-    Returns:
-    - None. Saves the modified image as a new BMP file.
+        Returns:
+        - None. Saves the modified image as a new BMP file.
     """
     # Open the BMP image
     image = Image.open(image_path)
@@ -46,6 +47,68 @@ def convert_to_black_and_white(image_path):
     # Save the new image
     new_image.save(image_path)
     print("'", image_path, "'", " has been modified to remove all grey pixels.", sep='')
+
+
+
+def minimize_fringe_width(image_path):
+    """
+        Purpose:
+            Convert the fringes in the given image to 1px thick, works on both plasma and bkg imgs
+        Args:
+        - image_path (str): Path to the BMP image file.
+
+        Returns:
+        - None. Saves the modified image as a new BMP file.
+    """
+    try:
+        # Open the image
+        image = Image.open(image_path)
+        pixels = image.load()
+
+        # Get image dimensions
+        width, height = image.size
+
+        for y in range(height):
+            x = 0
+            while x < width:
+                # Check for the start of a group of black pixels
+                if pixels[x, y] == (0, 0, 0):
+                    start = x
+                    while x < width and pixels[x, y] == (0, 0, 0):
+                        x += 1
+                    end = x
+
+                    # Check if the group width is between 2 and 15 pixels
+                    group_width = end - start
+                    if 2 <= group_width <= 15:
+                        # Set all pixels in the group to white except the leftmost one
+                        for i in range(start + 1, end):
+                            pixels[i, y] = (255, 255, 255)
+                else:
+                    x += 1
+
+        # Save the modified image
+        image.save(image_path)
+        print(f"Minimized fringe image overwritten onto the original image path.")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+
+def process_image(image_path):
+    """
+        Purpose:
+            Processes the given BMP image file by first converting it to only black and white
+            pixels and then thins the fringes out to 1px wide by only keeping the leftmost pixel.
+        Args:
+        - image_path (str): Path to the BMP image file.
+
+        Returns:
+        - None. Saves the modified image as a new BMP file.
+    """
+    convert_to_black_and_white(image_path)  # converts image to only black and white pixels
+    minimize_fringe_width(image_path)       # thins the fringes out to 1px using leftmost px
 
 
 
@@ -90,8 +153,6 @@ def num_of_fringes(image_path):
             An integer representing the number of fringes within the
             given BMP file
     """
-
-    convert_to_black_and_white(image_path)
 
     num_of_fringes = 0  # Init. the num of fringes to 0
 
@@ -211,8 +272,50 @@ def find_fringes(image_path, slices=1):
         if in_black:
             fringe_starts[sample_num].append(start)
 
-    # Modify the fringe_starts according to the new requirements
-    modified_fringe_starts = []
+    print("")
+    for row in fringe_starts:
+        print(row)
+
+    return fringe_starts
+
+
+
+def fill_in_zeros(delta_matrix, fringe_starts, image_path):
+    """
+        PURPOSE:
+            The purpose of this function is to take the fringe starting points from a given
+            already-processed image and fill in the required amount of zeros for the 'background
+            information' within the matrix. This will ensure that the image is basically
+            turned from an actual viewable image to a matrix version of the image itself.
+        ARGS:
+            image_path: a string which shows the RELATIVE path to the file
+                        you want to reference. Do not use absolute paths,
+                        as those are not compatible across systems and are
+                        not good practice.
+            slices: an integer which represents the number of samples the algorithm
+                will take.
+        RETURNS:
+            A 2D matrix (list of lists) which contains the integer starting
+            point on the x-axis of the BMP file of each fringe within the
+            image. Each index represents the sample number, where each entry
+            within each index represents the starting point of each fringe
+            on the x-axis. The number of entries within each index of the
+            matrix represents the # of fringes within the image. If you'd
+            like to quickly ascertain the # of fringes within the image, I
+            would suggest using the "num_of_fringes()" function (if it
+            exists within your version of this project).
+    """
+
+    # Load the BMP image
+    image = Image.open(image_path).convert('L')  # Convert to grayscale
+
+    # Convert the image to a numpy array
+    image_np = np.array(image)
+
+    # Get the dimensions of the image
+    height, width = image_np.shape
+
+    modified_fringe_starts = []  # return matrix
 
     for row in fringe_starts:
         if not row:
@@ -226,20 +329,67 @@ def find_fringes(image_path, slices=1):
 
         # Add differences for subsequent entries
         for i in range(1, len(row)):
-            difference = row[i] - row[i-1] - 1  # Subtract 1 to account for direct adjacency
-            modified_row.extend([0] * difference)
+            difference = row[i] - row[i-1]
+            if difference > 1:
+                modified_row.extend([0] * (difference - 1))
             modified_row.append(row[i])
 
         # Add zeros to the right of the last entry
+        print("Before:", modified_row)
         modified_row.extend([0] * (width - row[-1] - 1))
+        print("After:", modified_row)
+
 
         modified_fringe_starts.append(modified_row)
+        print(modified_row)
 
-    # TESTING ONLY
-    for row in modified_fringe_starts:
-        print("Length:", len(row))
+    return modified_delta_matrix
 
-    return modified_fringe_starts
+
+
+def fill_in_zeros_test(delta_matrix, fringe_starts, image_path):
+    """
+    PURPOSE:
+        Fill in the entries of delta_matrix into return_matrix at positions specified by fringe_starts.
+    ARGS:
+        delta_matrix: The matrix whose entries need to be placed into return_matrix.
+        fringe_starts: A matrix specifying positions to place entries from delta_matrix within return_matrix.
+        image_path: Relative path to the BMP file.
+    RETURNS:
+        A modified return_matrix after placing delta_matrix entries at specified positions.
+    """
+
+    # Ensure delta_matrix and fringe_starts are numpy arrays
+    delta_matrix = np.array(delta_matrix)
+    fringe_starts = np.array(fringe_starts)
+
+    # Load the BMP image
+    image = Image.open(image_path).convert('L')  # Convert to grayscale
+
+    # Convert the image to a numpy array
+    image_np = np.array(image)
+
+    # Get the dimensions of the image
+    height, width = image_np.shape
+
+    # Creating a matrix filled with 0.0
+    return_matrix = np.zeros((height, width))
+
+    # Ensure fringe_starts is within bounds
+    max_x = return_matrix.shape[1] - 1  # Max x-coordinate index in return_matrix
+
+    # Debugging: Print shapes for debugging
+    print("Shapes - delta_matrix:", delta_matrix.shape, "fringe_starts:", fringe_starts.shape, "return_matrix:",
+          return_matrix.shape)
+
+
+    # Iterate over each row in fringe_starts and place delta_matrix entries
+    for row_idx in range(len(fringe_starts)):
+        for i, x_position in enumerate(fringe_starts[row_idx]):
+            if x_position <= max_x:
+                return_matrix[row_idx, int(x_position)] = delta_matrix[row_idx, i]
+
+    return return_matrix
 
 
 
@@ -265,69 +415,34 @@ def find_delta(list1, list2):
         sample1 = list1[i]
         sample2 = list2[i]
 
-        # Ensure both samples have the same number of fringes
-        if len(sample1) != len(sample2):
-            raise ValueError("Sample {} in both lists must have the same number of fringes".format(i))
-
         # Calculate the differences between corresponding fringes
-        delta_sample = [sample1[j] - sample2[j] for j in range(len(sample1))]
+        delta_sample = []
+        for j in range(len(sample1)):
+            if sample1[j] != 0 and sample2[j] != 0 and sample1[j] == sample2[j]:
+                delta_sample.append(400)
+            else:
+                delta_sample.append(sample1[j] - sample2[j])
 
-        # Convert delta_sample to a NumPy array and multiply by 2 * pi
-        delta_sample = np.array(delta_sample) * (2 * np.pi)
+        # Convert delta_sample to a NumPy array
+        delta_sample = np.array(delta_sample)
+
+        # Multiply by 2 * pi to make it radial
+        delta_sample = (delta_sample) * (2 * np.pi)
+
+        # Replace all positive numbers with 0.0, due to the fact that positive numbers are the bkg fringes
+        delta_sample = np.where(delta_sample > 0, 0.0, delta_sample)
+
+        # Take the absolute value of the delta_sample
+        delta_sample = np.abs(delta_sample)
 
         # Convert the result back to a list and add to the delta matrix
         delta_matrix.append(delta_sample.tolist())
 
-    print("\n", "Delta")
-    for i in delta_matrix:
-        print(i)
+    print("\nDelta")
+    for row in delta_matrix:
+        print(row)
 
     return delta_matrix
-
-
-
-def expand_data(matrix, x): # DO NOT USE, DEPRICATED
-    """
-    Expands the amount of data within a given list of lists (matrix) by adding new entries
-    at the midpoint between each pair of existing entries in each row, targeting 'x' entries per row.
-
-    Args:
-    - matrix (list of lists): 2D list containing the original data.
-    - x (int): Target number of entries per row after doubling.
-
-    Returns:
-    - list of lists: A new 2D list with doubled data.
-    """
-
-    if x <= len(matrix[0]):
-        raise ValueError("Target number of entries (x) must be greater than the current number of columns in the matrix")
-
-    new_matrix = []
-
-    for row in matrix:
-        new_row = []
-        step_size = (len(row) - 1) / (x - 1)  # Calculate the step size
-
-        for j in range(x):
-            if j == 0:
-                new_row.append(row[0])
-            elif j == x - 1:
-                new_row.append(row[-1])
-            else:
-                # Calculate the index in the original row
-                index = (j - 1) * step_size
-                lower_index = int(index)
-                upper_index = lower_index + 1
-
-                # Calculate the interpolated value
-                weight = index - lower_index
-                interpolated_value = (1 - weight) * row[lower_index] + weight * row[upper_index]
-                interpolated_value = math.floor(interpolated_value)  # Floor the interpolated value
-                new_row.append(interpolated_value)
-
-        new_matrix.append(new_row)
-
-    return new_matrix
 
 
 
@@ -348,7 +463,7 @@ def plot_delta_heatmap(delta_matrix, plot_title):
     fig, ax = plt.subplots()
 
     # Plot the data as a heatmap with the 'plasma' colormap
-    cax = ax.imshow(data_np, cmap='jet_r', aspect='auto')
+    cax = ax.imshow(data_np, cmap='jet', aspect='auto')
 
     # Add colorbar to the plot
     cbar = fig.colorbar(cax)
@@ -360,8 +475,8 @@ def plot_delta_heatmap(delta_matrix, plot_title):
     cbar.ax.invert_yaxis()  # Invert the colorbar so that 0 is at the bottom
 
     # Set the labels and title
-    ax.set_xlabel('Fringe #')
-    ax.set_ylabel('Sample #')
+    ax.set_xlabel('X-Axis (px)')
+    ax.set_ylabel('Y-Axis (px)')
     ax.set_title(plot_title)
 
     # Set the window title (backend-specific method)
@@ -398,11 +513,20 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 # START - 6/21/24 Data
 
 # GAS DATA
-background_fringes = find_fringes('assets/6_21/700psiCFAirbkg.bmp') # REMOVE 26 AFTER TESTING
-actual_fringes = find_fringes('assets/6_21/700psiCFAir.bmp') # REMOVE 26 AFTER TESTING
+# process_image("assets/6_21/700psiCFAir.bmp")
+# process_image("assets/6_21/700psiCFAirbkg.bmp")
+background_fringes = find_fringes('assets/6_21/700psiCFAirbkg.bmp')
+actual_fringes = find_fringes('assets/6_21/700psiCFAir.bmp')
+# background_fringes = fill_in_zeros(background_fringes, 'assets/6_21/700psiCFAirbkg.bmp')
+# actual_fringes = fill_in_zeros(actual_fringes, 'assets/6_21/700psiCFAir.bmp')
 delta = find_delta(background_fringes, actual_fringes)
-# delta = expand_data(delta, 1000)
-plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
-plot_heatmap(delta, 787)
+
+# plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
 
 # STOP  - 6/21/24 Data
+
+
+# TESTING:
+
+test_matrix = fill_in_zeros_test(delta, actual_fringes, 'assets/6_21/700psiCFAir.bmp')
+plot_delta_heatmap(test_matrix, "6/21 Gas Fringe Δx (Radial)")
