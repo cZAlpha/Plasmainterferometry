@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial import KDTree
 
 
 
@@ -319,7 +320,113 @@ def fill_in_zeros(delta_matrix, fringe_starts, image_path):
             if x_position <= max_x:
                 return_matrix[row_idx, int(x_position)] = delta_matrix[row_idx, i]
 
+
     return return_matrix
+
+
+
+def linearly_interpolate_matrix(matrix):
+    """
+    Interpolates the data within each row of the matrix by smoothing out the zeros between non-zero values.
+
+    Args:
+        matrix: A 2D numpy array where rows contain data to be interpolated.
+
+    Returns:
+        A 2D numpy array with interpolated values.
+    """
+    # Ensure the matrix is a numpy array
+    matrix = np.array(matrix)
+
+    # Get the dimensions of the matrix
+    rows, cols = matrix.shape
+
+    # Initialize the output interpolated matrix
+    interpolated_matrix = np.zeros((rows, cols))
+
+    # Iterate over each row in the matrix
+    for row_idx in range(rows):
+        row = matrix[row_idx]
+
+        # Find the indices of non-zero values
+        non_zero_indices = np.nonzero(row)[0]
+
+        # If there are less than 2 non-zero values, no interpolation is needed
+        if len(non_zero_indices) < 2:
+            interpolated_matrix[row_idx] = row
+            continue
+
+        # Iterate over each segment between non-zero values and interpolate
+        for i in range(len(non_zero_indices) - 1):
+            start_idx = non_zero_indices[i]
+            end_idx = non_zero_indices[i + 1]
+
+            start_value = row[start_idx]
+            end_value = row[end_idx]
+
+            # Linear interpolation between the two non-zero values
+            interpolated_matrix[row_idx, start_idx:end_idx + 1] = np.linspace(start_value, end_value,
+                                                                              end_idx - start_idx + 1)
+
+        # Fill in values outside the non-zero range with linear interpolation towards zero
+        if non_zero_indices[0] > 0:
+            interpolated_matrix[row_idx, :non_zero_indices[0]] = np.linspace(0, row[non_zero_indices[0]],
+                                                                             non_zero_indices[0])
+
+        if non_zero_indices[-1] < cols - 1:
+            interpolated_matrix[row_idx, non_zero_indices[-1]:] = np.linspace(row[non_zero_indices[-1]], 0,
+                                                                              cols - non_zero_indices[-1])
+
+    return interpolated_matrix
+
+
+def interpolate_matrix_idw_optimized(matrix, radius=500):
+    """
+    Optimized IDW interpolation using KD-tree for nearest neighbor search.
+
+    Args:
+        matrix: A 2D numpy array where rows contain data to be interpolated.
+        radius: Search radius for nearest neighbors (optional, default is 5).
+
+    Returns:
+        A 2D numpy array with interpolated values using optimized IDW interpolation.
+    """
+    # Ensure the matrix is a numpy array
+    matrix = np.array(matrix)
+
+    # Get the dimensions of the matrix
+    rows, cols = matrix.shape
+
+    # Initialize the output interpolated matrix
+    interpolated_matrix = np.copy(matrix)
+
+    # Flatten matrix coordinates for KD-tree
+    points = np.array([[i, j] for i in range(rows) for j in range(cols) if matrix[i, j] != 0])
+    values = np.array([matrix[i, j] for i in range(rows) for j in range(cols) if matrix[i, j] != 0])
+
+    # Create KD-tree for fast nearest neighbor search
+    tree = KDTree(points)
+
+    # Iterate over each cell in the matrix
+    count = 0
+    for i in range(rows):
+        for j in range(cols):
+            count+= 1
+            if matrix[i, j] == 0:
+                # Query KD-tree for nearest neighbors within radius
+                dist, idx = tree.query([i, j], k=min(len(points), radius))
+
+                # Calculate weights using inverse distances
+                weights = np.array([1 / d if d != 0 else 1 for d in dist])
+
+                # Perform IDW interpolation
+                interpolated_value = np.sum(weights * values[idx]) / np.sum(weights)
+
+                # Update interpolated matrix
+                interpolated_matrix[i, j] = interpolated_value
+            print(count)
+
+    return interpolated_matrix
 
 
 
@@ -429,8 +536,11 @@ def analyze_images(bkg_img_path, act_img_path, plotname="Output Results"):
     # Find the delta x of the fringes from each image
     delta = find_delta(background_fringes, actual_fringes)
 
-    # Finalize the delta matrix by scaling it back to the original image size for accuracy
-    final_matrix = fill_in_zeros(delta, actual_fringes, actual_image_path)
+    # Intermediately finalize the delta matrix by scaling it back to the original image size for accuracy
+    intermediate_matrix = fill_in_zeros(delta, actual_fringes, actual_image_path)
+
+    # Finalize the matrix by interpolating the data across the x-axis
+    final_matrix = interpolate_matrix_idw_optimized(intermediate_matrix)
 
     # Plot the final matrix for visualization
     plot_delta_heatmap(final_matrix, plotname)
@@ -441,11 +551,11 @@ def analyze_images(bkg_img_path, act_img_path, plotname="Output Results"):
 # START - Examples
 #
 # PLASMA DATA
-# background_fringes = find_transitions('assets/ExampleImages/plasma_example_background_image.bmp')
-# actual_fringes = find_transitions('assets/ExampleImages/plasma_example_image.bmp')
+# background_fringes = find_fringes('assets/ExampleImages/plasma_example_background_image.bmp')
+# actual_fringes = find_fringes('assets/ExampleImages/plasma_example_image.bmp')
 # delta = find_delta(background_fringes, actual_fringes)
-# delta = expand_data(delta, 1000)
-# plot_delta_heatmap(delta, "Plasma Fringe Δx")
+# final_matrix = fill_in_zeros(delta, actual_fringes, 'assets/ExampleImages/plasma_example_background_image.bmp')
+# plot_delta_heatmap(final_matrix, "Plasma Fringe Δx")
 
 # GAS DATA
 # background_fringes = find_transitions('assets/ExampleImages/gas_example_background_image.bmp')
