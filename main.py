@@ -1,8 +1,6 @@
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-import os
 
 
 
@@ -272,9 +270,9 @@ def find_fringes(image_path, slices=1):
         if in_black:
             fringe_starts[sample_num].append(start)
 
-    print("")
-    for row in fringe_starts:
-        print(row)
+    # print("")
+    # for row in fringe_starts:
+    #     print(row)
 
     return fringe_starts
 
@@ -282,79 +280,12 @@ def find_fringes(image_path, slices=1):
 
 def fill_in_zeros(delta_matrix, fringe_starts, image_path):
     """
-        PURPOSE:
-            The purpose of this function is to take the fringe starting points from a given
-            already-processed image and fill in the required amount of zeros for the 'background
-            information' within the matrix. This will ensure that the image is basically
-            turned from an actual viewable image to a matrix version of the image itself.
-        ARGS:
-            image_path: a string which shows the RELATIVE path to the file
-                        you want to reference. Do not use absolute paths,
-                        as those are not compatible across systems and are
-                        not good practice.
-            slices: an integer which represents the number of samples the algorithm
-                will take.
-        RETURNS:
-            A 2D matrix (list of lists) which contains the integer starting
-            point on the x-axis of the BMP file of each fringe within the
-            image. Each index represents the sample number, where each entry
-            within each index represents the starting point of each fringe
-            on the x-axis. The number of entries within each index of the
-            matrix represents the # of fringes within the image. If you'd
-            like to quickly ascertain the # of fringes within the image, I
-            would suggest using the "num_of_fringes()" function (if it
-            exists within your version of this project).
-    """
-
-    # Load the BMP image
-    image = Image.open(image_path).convert('L')  # Convert to grayscale
-
-    # Convert the image to a numpy array
-    image_np = np.array(image)
-
-    # Get the dimensions of the image
-    height, width = image_np.shape
-
-    modified_fringe_starts = []  # return matrix
-
-    for row in fringe_starts:
-        if not row:
-            continue
-
-        modified_row = []
-
-        # Add zeros to the left of the first entry
-        modified_row.extend([0] * row[0])
-        modified_row.append(row[0])
-
-        # Add differences for subsequent entries
-        for i in range(1, len(row)):
-            difference = row[i] - row[i-1]
-            if difference > 1:
-                modified_row.extend([0] * (difference - 1))
-            modified_row.append(row[i])
-
-        # Add zeros to the right of the last entry
-        print("Before:", modified_row)
-        modified_row.extend([0] * (width - row[-1] - 1))
-        print("After:", modified_row)
-
-
-        modified_fringe_starts.append(modified_row)
-        print(modified_row)
-
-    return modified_delta_matrix
-
-
-
-def fill_in_zeros_test(delta_matrix, fringe_starts, image_path):
-    """
     PURPOSE:
         Fill in the entries of delta_matrix into return_matrix at positions specified by fringe_starts.
     ARGS:
         delta_matrix: The matrix whose entries need to be placed into return_matrix.
         fringe_starts: A matrix specifying positions to place entries from delta_matrix within return_matrix.
-        image_path: Relative path to the BMP file.
+        image_path: Relative path to the BMP file. Used solely for the dimensions of the image.
     RETURNS:
         A modified return_matrix after placing delta_matrix entries at specified positions.
     """
@@ -378,10 +309,9 @@ def fill_in_zeros_test(delta_matrix, fringe_starts, image_path):
     # Ensure fringe_starts is within bounds
     max_x = return_matrix.shape[1] - 1  # Max x-coordinate index in return_matrix
 
-    # Debugging: Print shapes for debugging
-    print("Shapes - delta_matrix:", delta_matrix.shape, "fringe_starts:", fringe_starts.shape, "return_matrix:",
-          return_matrix.shape)
-
+    # Print shapes for debugging
+    # print("Shapes - delta_matrix:", delta_matrix.shape, "fringe_starts:", fringe_starts.shape, "return_matrix:",
+    #       return_matrix.shape)
 
     # Iterate over each row in fringe_starts and place delta_matrix entries
     for row_idx in range(len(fringe_starts)):
@@ -418,19 +348,16 @@ def find_delta(list1, list2):
         # Calculate the differences between corresponding fringes
         delta_sample = []
         for j in range(len(sample1)):
-            if sample1[j] != 0 and sample2[j] != 0 and sample1[j] == sample2[j]:
-                delta_sample.append(400)
-            else:
-                delta_sample.append(sample1[j] - sample2[j])
+            # if sample1[j] != 0 and sample2[j] != 0 and sample1[j] == sample2[j]:
+            #     delta_sample.append(400)
+            # else:
+            delta_sample.append(sample1[j] - sample2[j])
 
         # Convert delta_sample to a NumPy array
         delta_sample = np.array(delta_sample)
 
         # Multiply by 2 * pi to make it radial
-        delta_sample = (delta_sample) * (2 * np.pi)
-
-        # Replace all positive numbers with 0.0, due to the fact that positive numbers are the bkg fringes
-        delta_sample = np.where(delta_sample > 0, 0.0, delta_sample)
+        # delta_sample = (delta_sample) * (2 * np.pi)
 
         # Take the absolute value of the delta_sample
         delta_sample = np.abs(delta_sample)
@@ -438,9 +365,9 @@ def find_delta(list1, list2):
         # Convert the result back to a list and add to the delta matrix
         delta_matrix.append(delta_sample.tolist())
 
-    print("\nDelta")
-    for row in delta_matrix:
-        print(row)
+    # print("\nDelta")
+    # for row in delta_matrix:
+    #     print(row)
 
     return delta_matrix
 
@@ -487,6 +414,27 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
+def analyze_images(bkg_img_path, act_img_path, plotname="Output Results"):
+    # Function that fully processes a given background and actual image of plasma and/or gas
+    # and graphs the results as well.
+
+    # Process both images
+    process_image(bkg_img_path)
+    process_image(act_img_path)
+
+    # Find the fringe locations for both images
+    actual_fringes = find_fringes(actual_image_path)
+    background_fringes = find_fringes(background_image_path)
+
+    # Find the delta x of the fringes from each image
+    delta = find_delta(background_fringes, actual_fringes)
+
+    # Finalize the delta matrix by scaling it back to the original image size for accuracy
+    final_matrix = fill_in_zeros(delta, actual_fringes, actual_image_path)
+
+    # Plot the final matrix for visualization
+    plot_delta_heatmap(final_matrix, plotname)
+
 
 
 
@@ -511,22 +459,20 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 # START - 6/21/24 Data
-
-# GAS DATA
-# process_image("assets/6_21/700psiCFAir.bmp")
-# process_image("assets/6_21/700psiCFAirbkg.bmp")
-background_fringes = find_fringes('assets/6_21/700psiCFAirbkg.bmp')
-actual_fringes = find_fringes('assets/6_21/700psiCFAir.bmp')
-# background_fringes = fill_in_zeros(background_fringes, 'assets/6_21/700psiCFAirbkg.bmp')
-# actual_fringes = fill_in_zeros(actual_fringes, 'assets/6_21/700psiCFAir.bmp')
-delta = find_delta(background_fringes, actual_fringes)
-
-# plot_delta_heatmap(delta, "6/21 Gas Fringe Δx")
-
+    # Plasma
+actual_image_path = "assets/6_21/700psiCFAir.bmp"
+background_image_path = "assets/6_21/700psiCFAirbkg.bmp"
+analyze_images(actual_image_path, background_image_path, "6/21 Plasma Fringe Δx")
 # STOP  - 6/21/24 Data
 
 
-# TESTING:
-
-test_matrix = fill_in_zeros_test(delta, actual_fringes, 'assets/6_21/700psiCFAir.bmp')
-plot_delta_heatmap(test_matrix, "6/21 Gas Fringe Δx (Radial)")
+# START - TESTING
+    # Gas
+actual_image_path = "assets/ExampleImages/gas_example_image.bmp"
+background_image_path = "assets/ExampleImages/gas_example_background_image.bmp"
+analyze_images(actual_image_path, background_image_path, "Gas Example Fringe Δx")
+    # Plasma
+actual_image_path = "assets/ExampleImages/plasma_example_image.bmp"
+background_image_path = "assets/ExampleImages/plasma_example_background_image.bmp"
+analyze_images(actual_image_path, background_image_path, "Plasma Example Fringe Δx")
+# STOP  - TESTING
