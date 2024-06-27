@@ -386,7 +386,7 @@ def interpolate_matrix_idw_optimized(matrix, radius=500):
 
     Args:
         matrix: A 2D numpy array where rows contain data to be interpolated.
-        radius: Search radius for nearest neighbors (optional, default is 5).
+        radius: Search radius for nearest neighbors (optional, default is 500, but this will take ages to compute btw).
 
     Returns:
         A 2D numpy array with interpolated values using optimized IDW interpolation.
