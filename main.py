@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageDraw
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
@@ -271,11 +271,156 @@ def find_fringes(image_path, slices=1):
         if in_black:
             fringe_starts[sample_num].append(start)
 
-    # print("")
-    # for row in fringe_starts:
-    #     print(row)
+    return fringe_starts
+
+
+
+def find_fringes_from_PIL_img(new_img, slices=1):
+    """
+    PURPOSE:
+        The purpose of this function is to take the slightly altered given image and
+        find the location of the given fringes in the x axis of the image, and return
+        a matrix of values whose row # corresponds to the x row of the image and whose
+        values within the row represent the given x coordinate starting point of each
+        fringe within that given x row of the image. To be clear, you can change the
+        second parameter to take that # of vertical slices of the image if you would
+        like to conserve processing power for testing or otherwise, at the very severe
+        cost of accuracy/precision of your data.
+    ARGS:
+        new_img: a PIL image object that represents the image.
+        slices: an integer which represents the number of samples the algorithm
+            will take.
+    RETURNS:
+        A 2D matrix (list of lists) which contains the integer starting
+        point on the x-axis of the BMP file of each fringe within the
+        image. Each index represents the sample number, where each entry
+        within each index represents the starting point of each fringe
+        on the x-axis. The number of entries within each index of the
+        matrix represents the # of fringes within the image. If you'd
+        like to quickly ascertain the # of fringes within the image, I
+        would suggest using the "num_of_fringes()" function (if it
+        exists within your version of this project).
+    """
+
+    # Convert the image to grayscale
+    gray_img = new_img.convert('L')
+
+    # Convert the image to a numpy array
+    image_np = np.array(gray_img)
+
+    # Get the dimensions of the image
+    height, width = image_np.shape
+
+    # Validate slices parameter
+    if slices <= 0:
+        raise ValueError("The number of samples (slices) must be greater than 0.")
+    if slices >= 100:
+        raise ValueError("The number of samples (slices) must be less than 100. Try to not input an argument for this value unless testing.")
+    if slices == 1:
+        slices = height
+
+    # Calculate the step size for sampling rows
+    step = height // slices
+
+    # Initialize the list to store the starting points of fringes
+    fringe_starts = [[] for _ in range(slices)]
+
+    for sample_num in range(slices):
+        # Determine the row index to sample
+        row_index = sample_num * step
+        row = image_np[row_index, :]
+
+        # Initialize variables to find transitions
+        in_black = False
+        start = None
+
+        for i in range(len(row)):
+            pixel_value = row[i]
+
+            if pixel_value != 255:
+                if not in_black:
+                    start = i
+                    in_black = True
+            else:
+                if in_black:
+                    fringe_starts[sample_num].append(start)
+                    in_black = False
+
+        # Handle case where the fringe goes till the end of the row
+        if in_black:
+            fringe_starts[sample_num].append(start)
 
     return fringe_starts
+
+
+
+def actual_to_bkg(image_path, top_pixels=20, bottom_pixels=20):
+    if top_pixels % 2 != 0:
+        print("ERROR: TOP PIXELS MUST BE EVEN")
+    if bottom_pixels % 2 != 0:
+        print("ERROR: BOTTOM PIXELS MUST BE EVEN")
+
+    # Load the image
+    img = Image.open(image_path)
+    width, height = img.size
+
+    # Crop the top and bottom parts
+    top_part = img.crop((0, 0, width, top_pixels))
+    bottom_part = img.crop((0, height - bottom_pixels, width, height))
+
+    # Create a new image with the same dimensions as the original
+    new_img = Image.new("RGB", (width, height), (255, 255, 255))  # white background
+
+    # Paste the top and bottom parts into the new image
+    new_img.paste(top_part, (0, 0))
+    new_img.paste(bottom_part, (0, height - bottom_pixels))
+
+    # Find location of the top and bottom fringe pixels, store them
+    fringe_location_matrix = find_fringes_from_PIL_img(new_img)
+
+    # Filter out empty rows (middle of the image)
+    filtered_fringe_starts = [row for row in fringe_location_matrix if row]
+
+    # Printing to debug
+    print(f"Number of non-empty fringe rows: {len(filtered_fringe_starts)}")
+    for row in filtered_fringe_starts:
+        print(row)
+
+    # Keep only the middle two rows
+    if len(filtered_fringe_starts) >= 2:
+        mid_index = len(filtered_fringe_starts) // 2
+        middle_two_rows = filtered_fringe_starts[mid_index - 1:mid_index + 1]
+    else:
+        middle_two_rows = filtered_fringe_starts
+
+    # Printing to debug
+    print(f"Number of middle rows: {len(middle_two_rows)}")
+    for row in middle_two_rows:
+        print(row)
+
+    y_loc_of_top_vals = top_pixels - 1
+    y_loc_of_bot_vals = height - bottom_pixels
+
+    tuple_location_matrix = [[], []]
+
+    # Iterate through top_vals and bot_vals simultaneously
+    for x_val_top, x_val_bot in zip(middle_two_rows[0], middle_two_rows[1]):
+        # Append tuples to result matrix
+        tuple_location_matrix[0].append((x_val_top, y_loc_of_top_vals))
+        tuple_location_matrix[1].append((x_val_bot, y_loc_of_bot_vals))
+
+    print("Tuple Location Matrix:")
+    for row in tuple_location_matrix:
+        print(row)
+
+    # Draw lines on the new_img based on tuple_location_matrix
+    draw = ImageDraw.Draw(new_img)
+    for i in range(len(tuple_location_matrix[0])):
+        x_top, y_top = tuple_location_matrix[0][i]
+        x_bot, y_bot = tuple_location_matrix[1][i]
+        draw.line((x_top, y_top, x_bot, y_bot), fill="black", width=1)
+
+    return new_img
 
 
 
@@ -378,6 +523,7 @@ def linearly_interpolate_matrix(matrix):
                                                                               cols - non_zero_indices[-1])
 
     return interpolated_matrix
+
 
 
 def interpolate_matrix_idw_optimized(matrix, radius=500):
@@ -540,7 +686,7 @@ def analyze_images(bkg_img_path, act_img_path, plotname="Output Results"):
     intermediate_matrix = fill_in_zeros(delta, actual_fringes, actual_image_path)
 
     # Finalize the matrix by interpolating the data across the x-axis
-    final_matrix = interpolate_matrix_idw_optimized(intermediate_matrix)
+    final_matrix = linearly_interpolate_matrix(intermediate_matrix)
 
     # Plot the final matrix for visualization
     plot_delta_heatmap(final_matrix, plotname)
@@ -570,19 +716,24 @@ def analyze_images(bkg_img_path, act_img_path, plotname="Output Results"):
 
 # START - 6/21/24 Data
     # Plasma
-actual_image_path = "assets/6_21/700psiCFAir.bmp"
-background_image_path = "assets/6_21/700psiCFAirbkg.bmp"
-analyze_images(actual_image_path, background_image_path, "6/21 Plasma Fringe Δx")
-# STOP  - 6/21/24 Data
-
-
-# START - TESTING
-    # Gas
-actual_image_path = "assets/ExampleImages/gas_example_image.bmp"
-background_image_path = "assets/ExampleImages/gas_example_background_image.bmp"
-analyze_images(actual_image_path, background_image_path, "Gas Example Fringe Δx")
-    # Plasma
-actual_image_path = "assets/ExampleImages/plasma_example_image.bmp"
-background_image_path = "assets/ExampleImages/plasma_example_background_image.bmp"
-analyze_images(actual_image_path, background_image_path, "Plasma Example Fringe Δx")
+# actual_image_path = "assets/6_21/700psiCFAir.bmp"
+# background_image_path = "assets/6_21/700psiCFAirbkg.bmp"
+# analyze_images(actual_image_path, background_image_path, "6/21 Plasma Fringe Δx")
+# # STOP  - 6/21/24 Data
+#
+#
+# # START - TESTING
+#     # Gas
+# actual_image_path = "assets/ExampleImages/gas_example_image.bmp"
+# background_image_path = "assets/ExampleImages/gas_example_background_image.bmp"
+# analyze_images(actual_image_path, background_image_path, "Gas Example Fringe Δx")
+#     # Plasma
+# actual_image_path = "assets/ExampleImages/plasma_example_image.bmp"
+# background_image_path = "assets/ExampleImages/plasma_example_background_image.bmp"
+# analyze_images(actual_image_path, background_image_path, "Plasma Example Fringe Δx")
 # STOP  - TESTING
+
+
+result_img = actual_to_bkg("imgProcessing/test_assets/gas_example_image.bmp")
+
+result_img.show()
