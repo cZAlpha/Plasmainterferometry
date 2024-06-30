@@ -1,7 +1,7 @@
 # Plasmainterferometry
 __Author:__ Noah Klaus
 </br>
-__Credit:__ Lianxin Xin
+__Credit:__ Lianxin Xin, her original codebase and instructions are the backbone of this project.
 </br> 
 __Description:__ This project is a Python project whose purpose is to diagnose the density of plasma and gas using fringe intereference taken from lasers passing through the plasma or gas (gas should be generated from a gasjet).
 
