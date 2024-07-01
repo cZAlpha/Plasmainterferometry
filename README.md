@@ -1,4 +1,7 @@
 # Plasmainterferometry
+
+<img src="readMeAssets/ss_of_mainpy.png" alt="Diagram Image">
+
 __Author:__ Noah Klaus
 </br>
 __Credit:__ Lianxin Xin, her original codebase and instructions are the backbone of this project.
@@ -29,8 +32,6 @@ The way that my program works is shown below in the flowchart diagram
 
 </br>
 
-<img src="assets/readMeAssets/PlasmainterferometryReadMeImage.svg" alt="Diagram Image">
-
 </br>
 </br>
 </br>
@@ -38,10 +39,4 @@ The way that my program works is shown below in the flowchart diagram
 # Theory Equations
 </br>
 Gas Density
-</br>
-<img src="assets/readMeAssets/gasDensity.png" alt="Gas Density Equation">
-</br>
-Plasma Density
-</br>
-<img src="assets/readMeAssets/plasmaDensity.png" alt="Plasma Density Equation">
 </br>
