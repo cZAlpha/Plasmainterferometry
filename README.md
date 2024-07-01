@@ -32,8 +32,6 @@ The way that my program works is shown below in the flowchart diagram
 
 </br>
 
-<img src="readMeAssets/PlasmainterferometryReadMeImage.svg" alt="Diagram Image">
-
 </br>
 </br>
 </br>
@@ -41,8 +39,4 @@ The way that my program works is shown below in the flowchart diagram
 # Theory Equations
 </br>
 Gas Density
-<img src="readMeAssets/gasDensity.png" alt="Gas Density Equation">
-</br>
-Plasma Density
-<img src="readMeAssets/plasmaDensity.png" alt="Plasma Density Equation">
 </br>
