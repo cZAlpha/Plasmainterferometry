@@ -1,4 +1,5 @@
 from mainFunctions import *
+
 #
 # Welcome!
 #
@@ -12,5 +13,5 @@ from mainFunctions import *
 # To save your results, simply hit the save button on the plot window that pops up.
 #
 
-img_to_analyze = "assets/6_21/700psiCFAir.bmp"
+img_to_analyze = "insert/relative/image/path :)"
 analyze_image(img_to_analyze)
