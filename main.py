@@ -1,4 +1,5 @@
-from mainFunctions import *
+from mainFunctions import *  # Import all analysis functions
+from ui import *             # Import all user interface functions
 
 #
 # Welcome!
@@ -13,5 +14,5 @@ from mainFunctions import *
 # To save your results, simply hit the save button on the plot window that pops up.
 #
 
-img_to_analyze = "insert/relative/image/path :)"
-analyze_image(img_to_analyze)
+ui_responses = mainUI()  # This will open the UI and return the dictionary containing the results
+analyze_image(ui_responses['Image Path'], ui_responses['Phase Shift'], ui_responses['On-axis Density Plot'], ui_responses['2D Density Mapping'])  # This line will analyze the image specified by the UI w/ the wanted plots

@@ -656,28 +656,45 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
-def analyze_image(act_img_path, plotname="Output Results"):
+def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, twoD_density_mapping, plotname="Output Results"):
     # Function that fully processes a given background and actual image of plasma and/or gas
     # and graphs the results as well. Does not return anything, it is void.
-    print("\n", "Image: ", "'", act_img_path, "'", " will now be analyzed.", sep="")
 
-    # Process both images
-    bkg_img_filepath = process_image(act_img_path)
+    # If the user specifies to analyze the inputted image in any way, do so
+    if ( bool_phaseShift_plot or bool_onaxis_density_plot or twoD_density_mapping ):
+        # Printing to the console that analysis will be performed
+        print("\n", "Image: ", "'", act_img_path, "'", " will now be analyzed.", sep="")
 
-    # Find the fringe locations for both images
-    actual_fringes = find_fringes(act_img_path)
-    background_fringes = find_fringes(bkg_img_filepath)
+        # Process both images
+        bkg_img_filepath = process_image(act_img_path)
 
-    # Find the delta x of the fringes from each image
-    delta = find_delta(background_fringes, actual_fringes)
+        # Find the fringe locations for both images
+        actual_fringes = find_fringes(act_img_path)
+        background_fringes = find_fringes(bkg_img_filepath)
 
-    # Intermediately finalize the delta matrix by scaling it back to the original image size for accuracy
-    intermediate_matrix = fill_in_zeros(delta, actual_fringes, act_img_path)
+        # Find the delta x of the fringes from each image
+        delta = find_delta(background_fringes, actual_fringes)
 
-    # Finalize the matrix by interpolating the data across the x-axis
-    final_matrix = linearly_interpolate_matrix(intermediate_matrix)
+        # Intermediately finalize the delta matrix by scaling it back to the original image size for accuracy
+        intermediate_matrix = fill_in_zeros(delta, actual_fringes, act_img_path)
 
-    # Plot the final matrix for visualization
-    plot_delta_heatmap(final_matrix, plotname)
+        # Finalize the matrix by interpolating the data across the x-axis
+        final_matrix = linearly_interpolate_matrix(intermediate_matrix)
 
-    print("The plot is now being displayed, enjoy.")
+        # If the user wants the phase shift plot, plot it and display it
+        if ( bool_phaseShift_plot ):
+            # Plot the final phase shift matrix for visualization
+            plot_delta_heatmap(final_matrix, plotname)
+
+        # If the user wants the on-axis density plot, plot it and display it
+        if ( bool_onaxis_density_plot ):
+            print("\n", "The on-axis density plot functionality of the program has not been completed yet, apologies.", sep="")
+
+        # If the user wants the 2D density mapping, plot it and display it
+        if (twoD_density_mapping):
+            print("\n", "The 2D density mapping functionality of the program has not been completed yet, apologies.", sep="")
+
+        print("\n", "Analysis Has Concluded.", sep="")
+
+    else:
+        print("\n", "No analysis has been conducted, as you did not specify to display any analysis results.", sep="")
