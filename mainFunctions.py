@@ -603,7 +603,7 @@ def find_delta(list1, list2):
         delta_sample = np.array(delta_sample)
 
         # Multiply by 2 * pi to make it radial
-        # delta_sample = (delta_sample) * (2 * np.pi)
+        delta_sample = (delta_sample) * (2 * np.pi)
 
         # Take the absolute value of the delta_sample
         delta_sample = np.abs(delta_sample)

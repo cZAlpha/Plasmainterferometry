@@ -18,6 +18,18 @@ results = {}  # Global variable to store results
 
 
 
+# Function that centers the window on the screen
+def center_window(window, width, height):
+    # Get screen width and height
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    # Calculate position x, y
+    x = (screen_width // 2) - (width // 2)
+    y = (screen_height // 2) - (height // 2)
+
+
+
 # Function to clear all buttons and labels
 def clearAll():
     global app, uploadButton, confirmButton, rejectButton, checkboxes_frame, title_label
@@ -113,6 +125,9 @@ def confirmImage(is_correct, path):
 def imageUploader():
     global app, uploadButton, confirmButton, rejectButton, title_label
 
+    # Resize window
+    app.geometry("800x800")
+
     fileTypes = [("BMP files", "*.bmp")]
     path = filedialog.askopenfilename(filetypes=fileTypes)
 
@@ -161,7 +176,7 @@ def ui():
 
     # Set the title and basic size of the app
     app.title("Plasmainterferemetry Plasma & Gas Density Diagnosis Program")
-    app.geometry("800x800")
+    app.geometry("300x150")
 
     # Set the background color of the main window to grey
     app.configure(bg="grey6")
@@ -181,7 +196,7 @@ def ui():
                              font=("Arial", 20, "bold"), bg="darkgoldenrod2",
                              fg="black", padx=20, pady=10, relief="raised",
                              borderwidth=2)
-    uploadButton.pack(side=tk.BOTTOM, pady=20)
+    uploadButton.pack(side=tk.TOP, pady=10)
 
 
 
