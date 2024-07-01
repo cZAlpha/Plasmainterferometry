@@ -1,4 +1,7 @@
 # Plasmainterferometry
+
+<img src="readMeAssets/ss_of_mainpy.png" alt="Diagram Image">
+
 __Author:__ Noah Klaus
 </br>
 __Credit:__ Lianxin Xin, her original codebase and instructions are the backbone of this project.
