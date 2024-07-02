@@ -594,16 +594,14 @@ def find_delta(list1, list2):
         # Calculate the differences between corresponding fringes
         delta_sample = []
         for j in range(len(sample1)):
-            # if sample1[j] != 0 and sample2[j] != 0 and sample1[j] == sample2[j]:
-            #     delta_sample.append(400)
-            # else:
+
             delta_sample.append(sample1[j] - sample2[j])
 
         # Convert delta_sample to a NumPy array
         delta_sample = np.array(delta_sample)
 
         # Multiply by 2 * pi to make it radial
-        delta_sample = (delta_sample) * (2 * np.pi)
+        # delta_sample = (delta_sample) * (2 * np.pi)
 
         # Take the absolute value of the delta_sample
         delta_sample = np.abs(delta_sample)
@@ -638,7 +636,7 @@ def plot_delta_heatmap(delta_matrix, plot_title):
     cbar = fig.colorbar(cax)
 
     # Set label for the colorbar
-    cbar.set_label('Delta Values (px)', rotation=90, labelpad=15)
+    cbar.set_label('Delta Values (rads)', rotation=90, labelpad=15)
 
     # Set ticks and labels for the colorbar
     cbar.ax.invert_yaxis()  # Invert the colorbar so that 0 is at the bottom
