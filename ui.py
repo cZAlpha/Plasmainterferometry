@@ -18,16 +18,13 @@ results = {}  # Global variable to store results
 
 
 
-# Function that centers the window on the screen
-def center_window(window, width, height):
-    # Get screen width and height
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
+# Function that resizes the app window to original size for importing file button
+def resize_small():
+    app.geometry("300x150")
 
-    # Calculate position x, y
-    x = (screen_width // 2) - (width // 2)
-    y = (screen_height // 2) - (height // 2)
-
+# Function that resizes the app window to medium size
+def resize_medium():
+    app.geometry("800x600")
 
 
 # Function to clear all buttons and labels
@@ -102,20 +99,29 @@ def confirmImage(is_correct, path):
             checkbox.pack(anchor="w")
 
         # Create and place the "Done" button
-        doneButton = tk.Button(checkboxes_frame, text="Done", font=("Arial", 14, "bold"), bg="lightgreen",
-                               fg="black", padx=10, pady=10, relief="raised", borderwidth=2,
+        doneButton = tk.Button(checkboxes_frame,
+                               text="Done",
+                               font=("Arial", 14, "bold"),
+                               bg="lightgreen",
+                               fg="black",
+                               padx=10, pady=10,
+                               relief="raised",
+                               borderwidth=2,
                                command=lambda: [clearAll(), updateResults(), createFinishButton(),
-                                                app.geometry("800x600")
-])
+                                                resize_medium() ])
         doneButton.pack(pady=10)
     else:
         # Clear the displayed image
         label.config(image='')
 
         # Re-create the original upload button
-        uploadButton = tk.Button(app, text="Import Image", command=imageUploader,
-                                 font=("Arial", 20, "bold"), bg="lightgreen",
-                                 fg="black", padx=20, pady=10, relief="raised",
+        uploadButton = tk.Button(app, text="Import Image",
+                                 command=imageUploader,
+                                 font=("Arial", 20, "bold"),
+                                 bg="lightgreen",
+                                 fg="black",
+                                 padx=20, pady=10,
+                                 relief="raised",
                                  borderwidth=2)
         uploadButton.pack(side=tk.BOTTOM, pady=20)
 
@@ -146,21 +152,29 @@ def imageUploader():
             uploadButton.destroy()
 
         # Create the label for image confirmation
-        title_label = tk.Label(app, text="Is This The Correct Image?", pady=10,
+        title_label = tk.Label(app, text="Is This The Correct Image?", pady=0,
                                bg="grey6", font=("Arial", 20, "bold"))
-        title_label.pack(pady=(50, 0))  # Adjust the padding here
+        title_label.pack(pady=(10, 0))  # Adjust the padding here
 
         # Create confirm and reject buttons
         rejectButton = tk.Button(app, text="No",
-                             font=("Arial", 12, "bold"), bg="lightgreen",
-                             fg="black", padx=20, pady=10, relief="raised",
-                             borderwidth=2, command=lambda: confirmImage(False, path))
+                             font=("Arial", 15, "bold"),
+                             bg="lightgreen",
+                             fg="black",
+                             padx=20, pady=10,
+                             relief="raised",
+                             borderwidth=2,
+                             command=lambda: (confirmImage(False, path), resize_small() ))
         rejectButton.pack(side=tk.BOTTOM, pady=(0, 20))
 
         confirmButton = tk.Button(app, text="Yes",
-                                  font=("Arial", 12, "bold"), bg="lightgreen",
-                                  fg="black", padx=20, pady=10, relief="raised",
-                                  borderwidth=2, command=lambda: confirmImage(True, path))
+                                  font=("Arial", 15, "bold"),
+                                  bg="lightgreen",
+                                  fg="black",
+                                  padx=20, pady=10,
+                                  relief="raised",
+                                  borderwidth=2,
+                                  command=lambda: confirmImage(True, path))
         confirmButton.pack(side=tk.BOTTOM, pady=(0, 10))
     else:
         print("Please choose a file!")
@@ -196,7 +210,7 @@ def ui():
                              font=("Arial", 20, "bold"), bg="darkgoldenrod2",
                              fg="black", padx=20, pady=10, relief="raised",
                              borderwidth=2)
-    uploadButton.pack(side=tk.TOP, pady=10)
+    uploadButton.pack(side=tk.TOP, pady=0)
 
 
 
