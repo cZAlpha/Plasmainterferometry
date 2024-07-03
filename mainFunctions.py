@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from mpl_toolkits.mplot3d import Axes3D  # Used in IDW optimized interpolation function
-
-
+import abel  # Used to perform inverse abel transformation
+from scipy.ndimage import gaussian_filter  # Used to smooth the 3D matrix after inverse abel
 
 
 
@@ -603,7 +603,7 @@ def find_delta(list1, list2):
         delta_sample = np.array(delta_sample)
 
         # Multiply by 2 * pi to make it radial
-        # delta_sample = (delta_sample) * (2 * np.pi)
+        delta_sample = (delta_sample) * (2 * np.pi)
 
         # Take the absolute value of the delta_sample
         delta_sample = np.abs(delta_sample)
@@ -698,3 +698,109 @@ def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, 
 
     else:
         print("\n", "No analysis has been conducted, as you did not specify to display any analysis results.", sep="")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def mad_filter(data, threshold=3):
+    """
+    Remove outliers based on Median Absolute Deviation (MAD).
+
+    Args:
+        data (np.ndarray): 2D array of data.
+        threshold (float): MAD threshold for identifying outliers.
+
+    Returns:
+        np.ndarray: Filtered data with outliers removed.
+    """
+    median = np.median(data)
+    mad = np.median(np.abs(data - median))
+    # Avoid division by zero
+    mad = mad if mad != 0 else 1
+    deviations = np.abs(data - median) / mad
+    # Mask out outliers
+    filtered_data = np.where(deviations < threshold, data, median)
+    return filtered_data
+
+act_img_path = "assets/ExampleImages/gas_example_image.bmp"
+
+# Process both images
+bkg_img_filepath = process_image(act_img_path)
+
+# Find the fringe locations for both images
+actual_fringes = find_fringes(act_img_path)
+background_fringes = find_fringes(bkg_img_filepath)
+
+# Find the delta x of the fringes from each image
+delta = find_delta(background_fringes, actual_fringes)
+
+# Intermediately finalize the delta matrix by scaling it back to the original image size for accuracy
+intermediate_matrix = fill_in_zeros(delta, actual_fringes, act_img_path)
+
+# Finalize the matrix by interpolating the data across the x-axis
+final_matrix = linearly_interpolate_matrix(intermediate_matrix)
+
+# Print the middle 50 rows of the final matrix
+num_rows = len(final_matrix)
+num_cols = len(final_matrix[0])
+middle_index = num_rows // 2
+
+# Determine the range for the middle 50 rows
+start_row = max(0, middle_index - 25)
+end_row = min(num_rows, middle_index + 25)
+
+# Convert the list of lists to a NumPy array
+final_matrix = np.array(final_matrix)
+
+# Perform the inverse Abel transformation using the "hansenlaw" method
+transformed_data = abel.Transform(final_matrix, direction='inverse', method='hansenlaw').transform
+
+# Find the maximum value and its index
+max_value = np.max(transformed_data)
+max_index = np.unravel_index(np.argmax(transformed_data), transformed_data.shape)
+
+print(f"Maximum value in transformed data: {max_value}")
+print(f"Index of maximum value in transformed data: {max_index}")
+
+# Median Absolute Deviation filter
+smoothed_data = transformed_data
+# smoothed_data = mad_filter(transformed_data,1000)
+#
+# # Find the maximum value and its index
+# max_value = np.max(smoothed_data)
+# max_index = np.unravel_index(np.argmax(smoothed_data), smoothed_data.shape)
+#
+# print(f"Maximum value in smoothed data: {max_value}")
+# print(f"Index of maximum value in smoothed data: {max_index}")
+
+# Ensure x, y, and z have matching shapes
+x = np.linspace(-1, 1, smoothed_data.shape[1])
+y = np.linspace(-1, 1, smoothed_data.shape[0])
+x, y = np.meshgrid(x, y)
+z = smoothed_data
+
+# Plot the 3D surface
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(x, y, z, cmap='jet')
+
+# Add labels and title
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Phase Shift')
+ax.set_title('3D Plot of Inverse Abel Transformed Data')
+
+plt.show()
