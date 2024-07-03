@@ -2,6 +2,8 @@ from PIL import Image, ImageDraw
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
+from mpl_toolkits.mplot3d import Axes3D  # Used in IDW optimized interpolation function
+
 
 
 
