@@ -82,7 +82,7 @@ def minimize_fringe_width(image_path):
 
                     # Check if the group width is between 2 and 15 pixels
                     group_width = end - start
-                    if 2 <= group_width <= 15:
+                    if 2 <= group_width <= 20:
                         # Set all pixels in the group to white except the leftmost one
                         for i in range(start + 1, end):
                             pixels[i, y] = (255, 255, 255)
