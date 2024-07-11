@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
+import os
 from mpl_toolkits.mplot3d import Axes3D  # Used in IDW optimized interpolation function
 
 
@@ -67,6 +68,11 @@ def minimize_fringe_width(image_path):
         image = Image.open(image_path)
         pixels = image.load()
 
+        # Save a copy of the original image
+        original_image_path = os.path.splitext(image_path)[0] + "_original.bmp"
+        image.save(original_image_path)
+        print(f"Original image saved as {original_image_path}")
+
         # Get image dimensions
         width, height = image.size
 
@@ -91,7 +97,7 @@ def minimize_fringe_width(image_path):
 
         # Save the modified image
         image.save(image_path)
-        print("\n", "'", image_path, "'", " has ben modified to minimize fringe width",sep="")
+        print("\n", "'", image_path, "'", " has been modified to minimize fringe width",sep="")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -656,7 +662,7 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
-def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, twoD_density_mapping, plotname="Output Results"):
+def analyze_image(act_img_path, bool_bkg_img, bool_phaseShift_plot, bool_onaxis_density_plot, twoD_density_mapping, plotname="Output Results"):
     # Function that fully processes a given background and actual image of plasma and/or gas
     # and graphs the results as well. Does not return anything, it is void.
 
@@ -695,6 +701,12 @@ def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, 
             print("\n", "The 2D density mapping functionality of the program has not been completed yet, apologies.", sep="")
 
         print("\n", "Analysis Has Concluded.", sep="")
+
+    elif(bool_bkg_img):  # If the user wanted only a background image to be generated
+        print("You have selected to generate a background image, one will be made shortly...")
+        minimize_fringe_width(act_img_path)
+        actual_to_bkg(act_img_path)
+        print("Generation has been completed!")
 
     else:
         print("\n", "No analysis has been conducted, as you did not specify to display any analysis results.", sep="")

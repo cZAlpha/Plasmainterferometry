@@ -80,6 +80,7 @@ def confirmImage(is_correct, path):
     if is_correct:
         # Create and populate checkbox_vars
         checkbox_vars = {
+            "Background Img": tk.BooleanVar(app),
             "Phase Shift": tk.BooleanVar(app),
             "On-axis Density Plot": tk.BooleanVar(app),
             "2D Density Mapping": tk.BooleanVar(app)
@@ -90,7 +91,7 @@ def confirmImage(is_correct, path):
         checkboxes_frame.pack(side=tk.BOTTOM, pady=20)
 
         # Create and place the label above the checkboxes
-        title_label = tk.Label(checkboxes_frame, text="Which Plots Would You Like?", bg="grey6", font=("Arial", 20, "bold"))
+        title_label = tk.Label(checkboxes_frame, text="What Data Would You Like?", bg="grey6", font=("Arial", 20, "bold"))
         title_label.pack(pady=10)
 
         # Create and place checkboxes
@@ -223,6 +224,8 @@ def mainUI():
 
     # Start the Tkinter event loop
     app.mainloop()
+
+    print("Results from UI are:", results)
 
     # Return the results after the event loop ends
     return results
