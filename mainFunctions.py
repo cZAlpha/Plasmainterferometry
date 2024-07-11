@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from mpl_toolkits.mplot3d import Axes3D  # Used in IDW optimized interpolation function
-import abel  # Used to perform inverse abel transformation
-from scipy.ndimage import gaussian_filter  # Used to smooth the 3D matrix after inverse abel
+import abel
+from scipy.ndimage import gaussian_filter
 
 
 
@@ -703,37 +703,55 @@ def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, 
 
 
 
+##########################################################################################
+def calculate_k(wavelength):
+    e = 1.602e-19  # elementary charge in coulombs
+    me = 9.109e-31  # electron mass in kg
+    epsilon_0 = 8.854e-12  # permittivity of free space in F/m
+    c = 3e8  # speed of light in m/s
+
+    # wavelength should be in meters
+    k = (e**2 * wavelength**2) / (4 * np.pi * me * epsilon_0 * c**2)
+    return k
 
 
 
-
-
-
-
-
-
-
-
-
-def mad_filter(data, threshold=3):
+def plot_3d_surface(data, plot_title):
     """
-    Remove outliers based on Median Absolute Deviation (MAD).
+    Plots a 3D surface of the given data.
 
-    Args:
-        data (np.ndarray): 2D array of data.
-        threshold (float): MAD threshold for identifying outliers.
+    ARGS:
+        data: A 2D NumPy array containing the data to plot.
+        plot_title: a string which represents the title of the plot.
 
-    Returns:
-        np.ndarray: Filtered data with outliers removed.
+    RETURNS:
+        None. This function displays a 3D plot of the given data.
     """
-    median = np.median(data)
-    mad = np.median(np.abs(data - median))
-    # Avoid division by zero
-    mad = mad if mad != 0 else 1
-    deviations = np.abs(data - median) / mad
-    # Mask out outliers
-    filtered_data = np.where(deviations < threshold, data, median)
-    return filtered_data
+    x = np.arange(data.shape[1])
+    y = np.arange(data.shape[0])
+    x, y = np.meshgrid(x, y)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    surf = ax.plot_surface(x, y, data, cmap='jet')
+    ax.set_xlabel('X-Axis (px)')
+    ax.set_ylabel('Y-Axis (px)')
+    ax.set_zlabel('Delta Values (rads)')
+    ax.set_title(plot_title)
+    plt.show()
+
+
+
+def bilinear_smooth(matrix, scale=1.0):
+    coords = np.indices(matrix.shape) * scale
+    return map_coordinates(matrix, coords, order=1, mode='nearest')
+
+
+
+
+
+
 
 act_img_path = "assets/ExampleImages/gas_example_image.bmp"
 
@@ -767,40 +785,17 @@ final_matrix = np.array(final_matrix)
 
 # Perform the inverse Abel transformation using the "hansenlaw" method
 transformed_data = abel.Transform(final_matrix, direction='inverse', method='hansenlaw').transform
+plot_3d_surface(transformed_data, "Inverse Abel")
 
-# Find the maximum value and its index
-max_value = np.max(transformed_data)
-max_index = np.unravel_index(np.argmax(transformed_data), transformed_data.shape)
+# Rotated 90 degrees
+plot_3d_surface(transformed_data, "Inverse Abel Rot 90")
+rotated_matrix = np.rot90(final_matrix, k=-1)
+transformed_data = abel.Transform(rotated_matrix, direction='inverse', method='hansenlaw').transform
 
-print(f"Maximum value in transformed data: {max_value}")
-print(f"Index of maximum value in transformed data: {max_index}")
-
-# Median Absolute Deviation filter
-smoothed_data = transformed_data
-# smoothed_data = mad_filter(transformed_data,1000)
-#
-# # Find the maximum value and its index
-# max_value = np.max(smoothed_data)
-# max_index = np.unravel_index(np.argmax(smoothed_data), smoothed_data.shape)
-#
-# print(f"Maximum value in smoothed data: {max_value}")
-# print(f"Index of maximum value in smoothed data: {max_index}")
-
-# Ensure x, y, and z have matching shapes
-x = np.linspace(-1, 1, smoothed_data.shape[1])
-y = np.linspace(-1, 1, smoothed_data.shape[0])
-x, y = np.meshgrid(x, y)
-z = smoothed_data
-
-# Plot the 3D surface
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(x, y, z, cmap='jet')
-
-# Add labels and title
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Phase Shift')
-ax.set_title('3D Plot of Inverse Abel Transformed Data')
-
-plt.show()
+# Plasma Density
+laser_wavelength = 1023e-9 # Wavelength of the laser in nm
+k = calculate_k(laser_wavelength)
+print("k value is:", k)
+plasma_density = transformed_data * k
+smoothed_matrix = gaussian_filter(plasma_density, sigma=5)
+plot_3d_surface(smoothed_matrix, "Plasma Density")
