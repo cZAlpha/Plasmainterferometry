@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
+import shutil
 import os
 from mpl_toolkits.mplot3d import Axes3D  # Used in IDW optimized interpolation function
 
@@ -68,11 +69,6 @@ def minimize_fringe_width(image_path):
         image = Image.open(image_path)
         pixels = image.load()
 
-        # Save a copy of the original image
-        original_image_path = os.path.splitext(image_path)[0] + "_original.bmp"
-        image.save(original_image_path)
-        print(f"Original image saved as {original_image_path}")
-
         # Get image dimensions
         width, height = image.size
 
@@ -88,7 +84,7 @@ def minimize_fringe_width(image_path):
 
                     # Check if the group width is between 2 and 15 pixels
                     group_width = end - start
-                    if 2 <= group_width <= 20:
+                    if 2 <= group_width <= 18:
                         # Set all pixels in the group to white except the leftmost one
                         for i in range(start + 1, end):
                             pixels[i, y] = (255, 255, 255)
@@ -97,7 +93,7 @@ def minimize_fringe_width(image_path):
 
         # Save the modified image
         image.save(image_path)
-        print("\n", "'", image_path, "'", " has been modified to minimize fringe width",sep="")
+        print("\n", "'", image_path, "'", " has ben modified to minimize fringe width",sep="")
 
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -666,6 +662,13 @@ def analyze_image(act_img_path, bool_bkg_img, bool_phaseShift_plot, bool_onaxis_
     # Function that fully processes a given background and actual image of plasma and/or gas
     # and graphs the results as well. Does not return anything, it is void.
 
+    # Define the path for saving the copied image
+    copy_img_path = os.path.splitext(act_img_path)[0] + "_copy" + os.path.splitext(act_img_path)[1]
+
+    # Save a copy of the actual image
+    shutil.copyfile(act_img_path, copy_img_path)
+    print(f"Saved a copy of the image to {copy_img_path}")
+
     # If the user specifies to analyze the inputted image in any way, do so
     if ( bool_phaseShift_plot or bool_onaxis_density_plot or twoD_density_mapping ):
         # Printing to the console that analysis will be performed
@@ -704,8 +707,7 @@ def analyze_image(act_img_path, bool_bkg_img, bool_phaseShift_plot, bool_onaxis_
 
     elif(bool_bkg_img):  # If the user wanted only a background image to be generated
         print("You have selected to generate a background image, one will be made shortly...")
-        minimize_fringe_width(act_img_path)
-        actual_to_bkg(act_img_path)
+        process_image(act_img_path)
         print("Generation has been completed!")
 
     else:
