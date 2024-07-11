@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
+import os
 from mpl_toolkits.mplot3d import Axes3D  # Used in IDW optimized interpolation function
 
 
@@ -67,6 +68,11 @@ def minimize_fringe_width(image_path):
         image = Image.open(image_path)
         pixels = image.load()
 
+        # Save a copy of the original image
+        original_image_path = os.path.splitext(image_path)[0] + "_original.bmp"
+        image.save(original_image_path)
+        print(f"Original image saved as {original_image_path}")
+
         # Get image dimensions
         width, height = image.size
 
@@ -91,7 +97,7 @@ def minimize_fringe_width(image_path):
 
         # Save the modified image
         image.save(image_path)
-        print("\n", "'", image_path, "'", " has ben modified to minimize fringe width",sep="")
+        print("\n", "'", image_path, "'", " has been modified to minimize fringe width",sep="")
 
     except Exception as e:
         print(f"An error occurred: {e}")
