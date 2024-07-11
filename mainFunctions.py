@@ -656,7 +656,7 @@ def plot_delta_heatmap(delta_matrix, plot_title):
 
 
 
-def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, twoD_density_mapping, plotname="Output Results"):
+def analyze_image(act_img_path, bool_bkg_img, bool_phaseShift_plot, bool_onaxis_density_plot, twoD_density_mapping, plotname="Output Results"):
     # Function that fully processes a given background and actual image of plasma and/or gas
     # and graphs the results as well. Does not return anything, it is void.
 
@@ -695,6 +695,12 @@ def analyze_image(act_img_path, bool_phaseShift_plot, bool_onaxis_density_plot, 
             print("\n", "The 2D density mapping functionality of the program has not been completed yet, apologies.", sep="")
 
         print("\n", "Analysis Has Concluded.", sep="")
+
+    elif(bool_bkg_img):  # If the user wanted only a background image to be generated
+        print("You have selected to generate a background image, one will be made shortly...")
+        minimize_fringe_width(act_img_path)
+        actual_to_bkg(act_img_path)
+        print("Generation has been completed!")
 
     else:
         print("\n", "No analysis has been conducted, as you did not specify to display any analysis results.", sep="")
